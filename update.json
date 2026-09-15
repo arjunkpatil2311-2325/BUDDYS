@@ -1,0 +1,15 @@
+{
+  "latestVersion": "0.3.0",
+  "versionCode": 3,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.3.0/app-universal-debug.apk",
+  "apkFileName": "app-universal-debug.apk",
+  "fileSize": "65.1 MB",
+  "releaseDate": "2026-09-15",
+  "releaseNotes": [
+    "Tap to Buddy peer-to-peer media sharing",
+    "Rebranded to Buddies with ultra-smooth UI",
+    "Enhanced connectivity and stability improvements"
+  ],
+  "isMandatory": false,
+  "minimumSupportedVersionCode": 1
+}

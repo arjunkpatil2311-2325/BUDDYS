@@ -1,0 +1,79 @@
+name: Buddies App Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 0.3.0)'
+        required: true
+        default: '0.3.0'
+        type: string
+      release_notes:
+        description: 'Release notes (comma-separated or text)'
+        required: false
+        default: 'Tap to Buddy peer-to-peer media sharing, Rebranded to Buddies with ultra-smooth UI, Enhanced connectivity and stability improvements'
+        type: string
+      is_mandatory:
+        description: 'Is mandatory update (true/false)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build Universal APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Validate Universal APK Output
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-universal-debug.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Universal APK not found!"
+            exit 1
+          fi
+          SIZE=$(stat -c%s "$APK_PATH" 2>/dev/null || stat -f%z "$APK_PATH")
+          echo "Built APK size: $SIZE bytes"
+          if [ "$SIZE" -lt 10485760 ]; then
+            echo "APK is too small ($SIZE bytes)"
+            exit 1
+          fi
+
+      - name: Create GitHub Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || format('v{0}', inputs.version) }}
+          name: Buddies ${{ github.ref_name || inputs.version }}
+          body: ${{ inputs.release_notes || 'Buddies Android App Release - Tap to Buddy P2P Media Sharing & Performance Enhancements' }}
+          files: app/build/outputs/apk/debug/app-universal-debug.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

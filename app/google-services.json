@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "906809344849",
+    "project_id": "glass-chat-13f27",
+    "storage_bucket": "glass-chat-13f27.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906809344849:android:fbde04e370f46c29bb0970",
+        "android_client_info": {
+          "package_name": "com.aura.glasschat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "906809344849-gilsq7ft4q0pdai1j61eq3m66vr9lnlm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aura.glasschat",
+            "certificate_hash": "9c8d94948282d8655589bdd5af12d6441d1d0cfe"
+          }
+        },
+        {
+          "client_id": "906809344849-mbug1pnve3rgh2av40ok2cbi597j7l4b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdtrIfMaEektJc2MAi6ptwGRmDar5UgkU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "906809344849-mbug1pnve3rgh2av40ok2cbi597j7l4b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

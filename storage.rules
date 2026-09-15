@@ -1,0 +1,46 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isChatParticipant(chatId) {
+      return isAuthenticated() && (
+        chatId.matches('^chat_.*' + request.auth.uid + '.*$') ||
+        request.resource.metadata.senderId == request.auth.uid ||
+        (resource != null && resource.metadata.senderId == request.auth.uid)
+      );
+    }
+
+    // Profile pictures: Users can only upload and delete their own avatar
+    match /profile_pictures/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId)
+                   && request.resource.size < 5 * 1024 * 1024;
+      allow delete: if isOwner(userId);
+    }
+
+    // Chat Media: Images and Voice Recordings - Accessible ONLY by Chat Participants
+    match /chat_media/{chatId}/{messageId}/{fileName} {
+      allow read: if isChatParticipant(chatId);
+      allow create: if isChatParticipant(chatId)
+                    && request.resource.size < 10 * 1024 * 1024;
+      allow update: if false;
+      allow delete: if isChatParticipant(chatId);
+    }
+
+    // Stories Media: 24-Hour Disappearing Stories Photos
+    match /stories/{storyId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+  }
+}
