@@ -131,6 +131,7 @@ dependencies {
     implementation(libs.play.services.code.scanner)
 
     testImplementation(libs.junit)
+    testImplementation("org.json:json:20231013")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

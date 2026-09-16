@@ -36,6 +36,7 @@ class UpdateManager(private val context: Context) {
         const val UPDATE_MANIFEST_URL = "https://buddys01.vercel.app/update.json"
         private const val PREFS_NAME = "buddys_update_prefs"
         private const val KEY_LAST_CHECK = "last_check_timestamp"
+        private const val KEY_CACHED_MANIFEST = "cached_update_manifest"
         private const val CHECK_COOLDOWN_MS = 15 * 60 * 1000L // 15 minutes cooldown between checks
 
         @Volatile
@@ -56,21 +57,47 @@ class UpdateManager(private val context: Context) {
         .retryOnConnectionFailure(true)
         .build()
 
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
     private val _availableUpdate = MutableStateFlow<UpdateManifest?>(null)
     val availableUpdate = _availableUpdate.asStateFlow()
 
     private val _promptUpdateEvent = MutableStateFlow<UpdateManifest?>(null)
     val promptUpdateEvent = _promptUpdateEvent.asStateFlow()
 
+    init {
+        restoreCachedManifest()
+    }
+
+    private fun restoreCachedManifest() {
+        val cachedJson = prefs.getString(KEY_CACHED_MANIFEST, null)
+        if (!cachedJson.isNullOrBlank()) {
+            try {
+                val manifest = UpdateManifest.fromJson(cachedJson)
+                val currentVersionCode = BuildConfig.VERSION_CODE
+                if (manifest.versionCode > currentVersionCode) {
+                    Log.d(TAG, "[UPDATE RESTORE] Restored cached update: v${manifest.latestVersion} (code ${manifest.versionCode}) > current code $currentVersionCode")
+                    _availableUpdate.value = manifest
+                } else {
+                    Log.d(TAG, "[UPDATE RESTORE] Cleared outdated cached update: v${manifest.latestVersion} (code ${manifest.versionCode}) <= current code $currentVersionCode")
+                    prefs.edit().remove(KEY_CACHED_MANIFEST).apply()
+                    _availableUpdate.value = null
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "[UPDATE RESTORE] Failed to parse cached manifest: ${e.message}")
+                prefs.edit().remove(KEY_CACHED_MANIFEST).apply()
+            }
+        }
+    }
+
     fun requestUpdatePrompt(manifest: UpdateManifest) {
+        Log.d(TAG, "[UPDATE PROMPT REQUESTED] From UI for v${manifest.latestVersion} (code ${manifest.versionCode})")
         _promptUpdateEvent.value = manifest
     }
 
     fun clearPromptEvent() {
         _promptUpdateEvent.value = null
     }
-
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     /**
      * Checks the online manifest for updates.
@@ -79,10 +106,14 @@ class UpdateManager(private val context: Context) {
     suspend fun checkForUpdates(force: Boolean = false): UpdateManifest? = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val lastCheck = prefs.getLong(KEY_LAST_CHECK, 0L)
+        val currentVersionCode = BuildConfig.VERSION_CODE
+
+        Log.d(TAG, "[UPDATE CHECK START] force=$force, localVersion=${BuildConfig.VERSION_NAME} (code $currentVersionCode)")
 
         if (!force && (now - lastCheck < CHECK_COOLDOWN_MS)) {
-            Log.d(TAG, "Skipping update check - inside cooldown window")
-            return@withContext null
+            val cached = _availableUpdate.value
+            Log.d(TAG, "[UPDATE CHECK] Inside 15m cooldown window (${(now - lastCheck) / 1000}s elapsed). Active cached update: ${cached?.latestVersion ?: "none"}")
+            return@withContext cached
         }
 
         try {
@@ -93,32 +124,41 @@ class UpdateManager(private val context: Context) {
                 .get()
                 .build()
 
+            Log.d(TAG, "[UPDATE CHECK] Querying online endpoint: $UPDATE_MANIFEST_URL")
             val response = httpClient.newCall(request).execute()
+            Log.d(TAG, "[UPDATE CHECK] HTTP Response code: ${response.code}")
+
             if (!response.isSuccessful) {
-                Log.w(TAG, "Update check failed with HTTP ${response.code}")
-                return@withContext null
+                Log.w(TAG, "[UPDATE CHECK] Server check failed with HTTP ${response.code}")
+                return@withContext _availableUpdate.value
             }
 
-            val body = response.body?.string() ?: return@withContext null
+            val body = response.body?.string()
+            if (body.isNullOrBlank()) {
+                Log.w(TAG, "[UPDATE CHECK] Empty manifest response body")
+                return@withContext _availableUpdate.value
+            }
+
             prefs.edit().putLong(KEY_LAST_CHECK, now).apply()
 
             val manifest = UpdateManifest.fromJson(body)
-            val currentVersionCode = BuildConfig.VERSION_CODE
-
-            Log.d(TAG, "Online version: ${manifest.latestVersion} (code ${manifest.versionCode}), Local: ${BuildConfig.VERSION_NAME} (code $currentVersionCode)")
+            Log.d(TAG, "[UPDATE CHECK] Online version: v${manifest.latestVersion} (code ${manifest.versionCode}), Local: v${BuildConfig.VERSION_NAME} (code $currentVersionCode)")
 
             // Update is available if online versionCode is strictly greater than local versionCode
             if (manifest.versionCode > currentVersionCode) {
+                Log.d(TAG, "[UPDATE AVAILABLE] Higher version detected: v${manifest.latestVersion} (code ${manifest.versionCode}) > local $currentVersionCode")
+                prefs.edit().putString(KEY_CACHED_MANIFEST, manifest.toJson()).apply()
                 _availableUpdate.value = manifest
                 return@withContext manifest
             } else {
+                Log.d(TAG, "[UP TO DATE] App is current: local code $currentVersionCode >= online code ${manifest.versionCode}")
+                prefs.edit().remove(KEY_CACHED_MANIFEST).apply()
                 _availableUpdate.value = null
+                return@withContext null
             }
-
-            return@withContext null
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to check for updates: ${e.message}")
-            return@withContext null
+            Log.w(TAG, "[UPDATE CHECK ERROR] Network or parse failure: ${e.message}")
+            return@withContext _availableUpdate.value
         }
     }
 
@@ -135,6 +175,7 @@ class UpdateManager(private val context: Context) {
      */
     fun downloadApk(manifest: UpdateManifest): Flow<DownloadState> = flow {
         try {
+            Log.d(TAG, "[DOWNLOAD START] File: ${manifest.apkFileName}, Target URL: ${manifest.apkUrl}, Stated size: ${manifest.fileSize}")
             val updatesDir = File(context.cacheDir, "updates").apply { mkdirs() }
             val apkFile = File(updatesDir, manifest.apkFileName)
 
@@ -150,17 +191,20 @@ class UpdateManager(private val context: Context) {
 
             val response = httpClient.newCall(request).execute()
             if (!response.isSuccessful) {
+                Log.e(TAG, "[DOWNLOAD ERROR] HTTP ${response.code} from server")
                 emit(DownloadState.Error("Server returned error: ${response.code}"))
                 return@flow
             }
 
             val responseBody = response.body
             if (responseBody == null) {
+                Log.e(TAG, "[DOWNLOAD ERROR] Null response body")
                 emit(DownloadState.Error("Empty download response body"))
                 return@flow
             }
 
             val contentLength = responseBody.contentLength()
+            Log.d(TAG, "[DOWNLOAD STREAM] Content-Length: $contentLength bytes")
             var inputStream: java.io.BufferedInputStream? = null
             var outputStream: java.io.BufferedOutputStream? = null
 
@@ -203,8 +247,10 @@ class UpdateManager(private val context: Context) {
                 }
 
                 outputStream.flush()
+                Log.d(TAG, "[DOWNLOAD COMPLETE] Finished downloading ${apkFile.length()} bytes to ${apkFile.absolutePath}")
 
                 if (apkFile.length() < 10 * 1024 * 1024) {
+                    Log.e(TAG, "[DOWNLOAD CORRUPTED] Output file size ${apkFile.length()} bytes is too small")
                     emit(DownloadState.Error("Downloaded file is incomplete or corrupted."))
                 } else {
                     emit(DownloadState.Success(apkFile))
@@ -216,7 +262,7 @@ class UpdateManager(private val context: Context) {
             }
 
         } catch (e: Exception) {
-            Log.e(TAG, "APK Download failed", e)
+            Log.e(TAG, "[DOWNLOAD EXCEPTION] APK Download failed: ${e.message}", e)
             emit(DownloadState.Error(e.localizedMessage ?: "Download failed"))
         }
     }.flowOn(Dispatchers.IO)
@@ -238,7 +284,7 @@ class UpdateManager(private val context: Context) {
     fun launchInstaller(apkFile: File) {
         try {
             if (!apkFile.exists()) {
-                Log.e(TAG, "Cannot launch installer - APK file does not exist at ${apkFile.absolutePath}")
+                Log.e(TAG, "[INSTALLER ERROR] Cannot launch installer - APK file does not exist at ${apkFile.absolutePath}")
                 return
             }
 
@@ -251,9 +297,9 @@ class UpdateManager(private val context: Context) {
             }
 
             context.startActivity(installIntent)
-            Log.d(TAG, "Launched APK installer with URI: $uri")
+            Log.d(TAG, "[INSTALLER LAUNCH] Successfully launched APK installer with URI: $uri")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to launch package installer", e)
+            Log.e(TAG, "[INSTALLER EXCEPTION] Failed to launch package installer: ${e.message}", e)
         }
     }
 

@@ -16,6 +16,22 @@ data class UpdateManifest(
     val isMandatory: Boolean,
     val minimumSupportedVersionCode: Int
 ) {
+    fun toJson(): String {
+        val json = JSONObject()
+        json.put("latestVersion", latestVersion)
+        json.put("versionCode", versionCode)
+        json.put("apkUrl", apkUrl)
+        json.put("apkFileName", apkFileName)
+        json.put("fileSize", fileSize)
+        json.put("releaseDate", releaseDate)
+        val notesArray = org.json.JSONArray()
+        releaseNotes.forEach { notesArray.put(it) }
+        json.put("releaseNotes", notesArray)
+        json.put("isMandatory", isMandatory)
+        json.put("minimumSupportedVersionCode", minimumSupportedVersionCode)
+        return json.toString()
+    }
+
     companion object {
         fun fromJson(jsonStr: String): UpdateManifest {
             val json = JSONObject(jsonStr)
