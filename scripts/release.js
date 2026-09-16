@@ -288,7 +288,7 @@ function deployWebsite() {
 
     if (LOCAL_WEBSITE_MANIFEST && fs.existsSync(path.dirname(LOCAL_WEBSITE_MANIFEST))) {
         try {
-            const vercelCmd = isWin ? 'cmd /c "npx --yes vercel --prod --yes"' : 'npx --yes vercel --prod --yes';
+            const vercelCmd = isWin ? 'cmd /c "npx --yes vercel --scope arjunagency --prod --yes"' : 'npx --yes vercel --scope arjunagency --prod --yes';
             execSync(vercelCmd, {
                 cwd: path.dirname(path.dirname(LOCAL_WEBSITE_MANIFEST)),
                 stdio: 'inherit'
