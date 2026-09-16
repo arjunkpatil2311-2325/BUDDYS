@@ -47,6 +47,7 @@ import com.aura.glasschat.data.model.User
 import com.aura.glasschat.data.model.UserStories
 import com.aura.glasschat.data.repository.FollowRepository
 import com.aura.glasschat.data.repository.FollowStatus
+import com.aura.glasschat.data.update.UpdateManifest
 import com.aura.glasschat.ui.components.*
 import com.aura.glasschat.ui.theme.*
 import com.aura.glasschat.ui.viewmodel.HomeViewModel
@@ -509,6 +510,17 @@ fun HomeScreen(
                                     }
                                 }
 
+                                val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
+                                val availableUpdate by updateManager.availableUpdate.collectAsState()
+
+                                if (availableUpdate != null) {
+                                    UpdateAvailableBanner(
+                                        manifest = availableUpdate!!,
+                                        onUpdateClick = { updateManager.requestUpdatePrompt(it) },
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                    )
+                                }
+
                                 // "Status / My Story" Section
                                 Text(
                                     text = "Status",
@@ -921,6 +933,17 @@ fun HomeScreen(
                                         )
                                     }
                                 }
+                            }
+
+                            val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
+                            val availableUpdate by updateManager.availableUpdate.collectAsState()
+
+                            if (availableUpdate != null) {
+                                UpdateAvailableBanner(
+                                    manifest = availableUpdate!!,
+                                    onUpdateClick = { updateManager.requestUpdatePrompt(it) },
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
                             }
 
                             // Profile Hero Card

@@ -43,12 +43,36 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
 
     private val updateManager = UpdateManager.getInstance(application)
 
+    val availableUpdate: StateFlow<UpdateManifest?> = updateManager.availableUpdate
+
     private val _uiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
     val uiState: StateFlow<UpdateUiState> = _uiState.asStateFlow()
 
     init {
         // Automatically check for updates on startup
         checkForUpdates(force = false)
+
+        // Observe manual prompt requests from Profile, Notification Tab, Settings
+        viewModelScope.launch {
+            updateManager.promptUpdateEvent.collect { manifest ->
+                if (manifest != null) {
+                    promptUpdate(manifest)
+                    updateManager.clearPromptEvent()
+                }
+            }
+        }
+    }
+
+    /**
+     * Manually triggers the update dialog/flow for a manifest.
+     */
+    fun promptUpdate(manifest: UpdateManifest, isMandatory: Boolean = false) {
+        val currentVersionCode = BuildConfig.VERSION_CODE
+        val mandatory = isMandatory || manifest.isMandatory || (currentVersionCode < manifest.minimumSupportedVersionCode)
+        _uiState.value = UpdateUiState.UpdateAvailable(
+            manifest = manifest,
+            isMandatory = mandatory
+        )
     }
 
     /**

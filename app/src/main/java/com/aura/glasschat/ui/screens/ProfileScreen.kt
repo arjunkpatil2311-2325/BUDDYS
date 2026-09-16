@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.aura.glasschat.data.model.User
+import com.aura.glasschat.data.update.UpdateManifest
 import com.aura.glasschat.ui.components.*
 import com.aura.glasschat.ui.theme.*
 import com.aura.glasschat.ui.viewmodel.ProfileViewModel
@@ -295,6 +296,17 @@ fun BuddysFullProfileView(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 16.dp, vertical = 6.dp)
         ) {
+            val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
+            val availableUpdate by updateManager.availableUpdate.collectAsState()
+
+            if (availableUpdate != null) {
+                UpdateAvailableBanner(
+                    manifest = availableUpdate!!,
+                    onUpdateClick = { updateManager.requestUpdatePrompt(it) },
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+
             // Profile Header Card
             BuddysCard(
                 modifier = Modifier.fillMaxWidth(),

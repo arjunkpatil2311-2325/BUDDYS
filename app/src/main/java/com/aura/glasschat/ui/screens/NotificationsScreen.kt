@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aura.glasschat.data.model.AppNotification
 import com.aura.glasschat.data.model.FollowRequest
+import com.aura.glasschat.data.update.UpdateManifest
 import com.aura.glasschat.ui.components.*
 import com.aura.glasschat.ui.theme.*
 import com.aura.glasschat.ui.viewmodel.NotificationsViewModel
@@ -40,6 +42,9 @@ fun NotificationsScreen(
     viewModel: NotificationsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
+    val availableUpdate by updateManager.availableUpdate.collectAsState()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -55,7 +60,7 @@ fun NotificationsScreen(
                 onBack = onBack
             )
 
-            if (uiState.notifications.isEmpty() && uiState.pendingRequests.isEmpty()) {
+            if (uiState.notifications.isEmpty() && uiState.pendingRequests.isEmpty() && availableUpdate == null) {
                 BuddysEmptyState(
                     title = "All caught up",
                     subtitle = "Follow requests and new notifications will appear here.",
@@ -70,6 +75,16 @@ fun NotificationsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
+                    // System Update Notification Banner
+                    if (availableUpdate != null) {
+                        item(key = "system_update_banner") {
+                            UpdateNotificationCard(
+                                manifest = availableUpdate!!,
+                                onUpdateClick = { updateManager.requestUpdatePrompt(it) }
+                            )
+                        }
+                    }
+
                     // Pending Follow Requests Section
                     if (uiState.pendingRequests.isNotEmpty()) {
                         item {

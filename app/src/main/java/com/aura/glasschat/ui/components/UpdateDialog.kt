@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.aura.glasschat.data.update.UpdateManifest
 import com.aura.glasschat.ui.theme.BuddysTheme
 import com.aura.glasschat.ui.viewmodel.UpdateUiState
 import java.util.Locale
@@ -451,6 +452,247 @@ private fun CalmActionButton(
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
+        }
+    }
+}
+
+/**
+ * Premium in-app Update Banner for Profile and HomeScreen sections.
+ */
+@Composable
+fun UpdateAvailableBanner(
+    manifest: UpdateManifest,
+    onUpdateClick: (UpdateManifest) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .clickable { onUpdateClick(manifest) },
+        shape = RoundedCornerShape(20.dp),
+        color = BuddysTheme.colors.surface,
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, BuddysTheme.colors.primaryAccent.copy(alpha = 0.6f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(BuddysTheme.colors.primaryAccent.copy(alpha = 0.15f))
+                            .border(1.dp, BuddysTheme.colors.primaryAccent.copy(alpha = 0.3f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SystemUpdate,
+                            contentDescription = null,
+                            tint = BuddysTheme.colors.primaryAccent,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Update Available",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = BuddysTheme.colors.textPrimary,
+                                    fontSize = 15.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                color = BuddysTheme.colors.primaryAccent.copy(alpha = 0.18f),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "v${manifest.latestVersion}",
+                                    color = BuddysTheme.colors.primaryAccent,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = if (manifest.fileSize.isNotBlank()) "Tap to install • ${manifest.fileSize}" else "Tap to install latest improvements",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = BuddysTheme.colors.textSecondary,
+                                fontSize = 12.sp
+                            )
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = { onUpdateClick(manifest) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BuddysTheme.colors.primaryAccent,
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Update",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            if (manifest.releaseNotes.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = BuddysTheme.colors.border.copy(alpha = 0.5f), thickness = 0.8.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                manifest.releaseNotes.take(2).forEach { note ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "•",
+                            color = BuddysTheme.colors.primaryAccent,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
+                        Text(
+                            text = note,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = BuddysTheme.colors.textPrimary.copy(alpha = 0.85f),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            ),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Activity / Notifications Feed Update Card.
+ */
+@Composable
+fun UpdateNotificationCard(
+    manifest: UpdateManifest,
+    onUpdateClick: (UpdateManifest) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onUpdateClick(manifest) },
+        shape = RoundedCornerShape(16.dp),
+        color = BuddysTheme.colors.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.primaryAccent.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(BuddysTheme.colors.primaryAccent.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SystemUpdate,
+                    contentDescription = null,
+                    tint = BuddysTheme.colors.primaryAccent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Buddies Update Available",
+                        fontWeight = FontWeight.Bold,
+                        color = BuddysTheme.colors.textPrimary,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        color = BuddysTheme.colors.primaryAccent.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "v${manifest.latestVersion}",
+                            color = BuddysTheme.colors.primaryAccent,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                val noteSummary = manifest.releaseNotes.firstOrNull() ?: "New performance enhancements and bug fixes"
+                Text(
+                    text = noteSummary,
+                    color = BuddysTheme.colors.textSecondary,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = { onUpdateClick(manifest) },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BuddysTheme.colors.primaryAccent,
+                    contentColor = Color.White
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.height(34.dp)
+            ) {
+                Text(
+                    text = "Update",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

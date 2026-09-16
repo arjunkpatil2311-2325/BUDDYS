@@ -10,6 +10,9 @@ import androidx.core.content.FileProvider
 import com.aura.glasschat.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -53,6 +56,20 @@ class UpdateManager(private val context: Context) {
         .retryOnConnectionFailure(true)
         .build()
 
+    private val _availableUpdate = MutableStateFlow<UpdateManifest?>(null)
+    val availableUpdate = _availableUpdate.asStateFlow()
+
+    private val _promptUpdateEvent = MutableStateFlow<UpdateManifest?>(null)
+    val promptUpdateEvent = _promptUpdateEvent.asStateFlow()
+
+    fun requestUpdatePrompt(manifest: UpdateManifest) {
+        _promptUpdateEvent.value = manifest
+    }
+
+    fun clearPromptEvent() {
+        _promptUpdateEvent.value = null
+    }
+
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     /**
@@ -92,7 +109,10 @@ class UpdateManager(private val context: Context) {
 
             // Update is available if online versionCode is strictly greater than local versionCode
             if (manifest.versionCode > currentVersionCode) {
+                _availableUpdate.value = manifest
                 return@withContext manifest
+            } else {
+                _availableUpdate.value = null
             }
 
             return@withContext null
@@ -100,6 +120,14 @@ class UpdateManager(private val context: Context) {
             Log.w(TAG, "Failed to check for updates: ${e.message}")
             return@withContext null
         }
+    }
+
+    /**
+     * Actively forces an update check bypassing cooldown and returns (hasUpdate, manifest).
+     */
+    suspend fun forceCheckForUpdate(): Pair<Boolean, UpdateManifest?> {
+        val manifest = checkForUpdates(force = true)
+        return Pair(manifest != null, manifest)
     }
 
     /**

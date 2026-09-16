@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aura.glasschat.BuildConfig
+import com.aura.glasschat.data.update.UpdateManifest
 import com.aura.glasschat.security.AppLockManager
 import com.aura.glasschat.security.BiometricAuthManager
 import com.aura.glasschat.security.LockTimeout
@@ -33,6 +35,7 @@ import com.aura.glasschat.ui.components.BuddysOutlinedButton
 import com.aura.glasschat.ui.components.BuddysTopBar
 import com.aura.glasschat.ui.theme.*
 import com.aura.glasschat.ui.viewmodel.PrivacySettingsViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun PrivacySettingsScreen(
@@ -47,6 +50,11 @@ fun PrivacySettingsScreen(
     viewModel: PrivacySettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
+    val availableUpdate by updateManager.availableUpdate.collectAsState()
+    var isCheckingUpdates by remember { mutableStateOf(false) }
+
     val uiState by viewModel.uiState.collectAsState()
     val themeMode by ThemePreferences.themeMode.collectAsState()
 
@@ -801,6 +809,138 @@ fun PrivacySettingsScreen(
                                             modifier = Modifier.height(34.dp)
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ==========================================
+                // 7. APP VERSION & UPDATES
+                // ==========================================
+                item {
+                    Text(
+                        text = "APP VERSION & UPDATES",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = BuddysTheme.colors.primaryRed,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                    )
+
+                    BuddysCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Version Header Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape)
+                                            .background(BuddysTheme.colors.primaryAccent.copy(alpha = 0.12f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = null,
+                                            tint = BuddysTheme.colors.primaryAccent,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = "Buddies for Android",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = BuddysTheme.colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "Version ${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
+                                            fontSize = 12.5.sp,
+                                            color = BuddysTheme.colors.textSecondary
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    color = if (availableUpdate != null) BuddysTheme.colors.primaryAccent.copy(alpha = 0.15f) else Color(0xFF22A06B).copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = if (availableUpdate != null) "Update Ready" else "Latest",
+                                        color = if (availableUpdate != null) BuddysTheme.colors.primaryAccent else Color(0xFF22A06B),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+                            HorizontalDivider(color = BuddysTheme.colors.border.copy(alpha = 0.6f), thickness = 0.8.dp)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            if (availableUpdate != null) {
+                                val manifest = availableUpdate!!
+                                Text(
+                                    text = "v${manifest.latestVersion} is available to install (${manifest.fileSize})",
+                                    fontSize = 13.sp,
+                                    color = BuddysTheme.colors.textPrimary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Button(
+                                    onClick = { updateManager.requestUpdatePrompt(manifest) },
+                                    modifier = Modifier.fillMaxWidth().height(42.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = BuddysTheme.colors.primaryAccent,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Update to v${manifest.latestVersion}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Your app is up to date",
+                                        fontSize = 13.sp,
+                                        color = BuddysTheme.colors.textSecondary
+                                    )
+
+                                    BuddysOutlinedButton(
+                                        text = if (isCheckingUpdates) "Checking..." else "Check for updates",
+                                        onClick = {
+                                            if (!isCheckingUpdates) {
+                                                isCheckingUpdates = true
+                                                coroutineScope.launch {
+                                                    val (hasUpdate, manifest) = updateManager.forceCheckForUpdate()
+                                                    isCheckingUpdates = false
+                                                    if (hasUpdate && manifest != null) {
+                                                        updateManager.requestUpdatePrompt(manifest)
+                                                    } else {
+                                                        Toast.makeText(context, "Buddies is up to date (v${BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.height(36.dp)
+                                    )
                                 }
                             }
                         }

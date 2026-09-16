@@ -1,9 +1,9 @@
 {
-  "latestVersion": "0.4.0",
-  "versionCode": 4,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.0/app-universal-debug.apk",
+  "latestVersion": "0.4.1",
+  "versionCode": 5,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.1/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
-  "fileSize": "65.1 MB",
+  "fileSize": "65.2 MB",
   "releaseDate": "2026-09-16",
   "releaseNotes": [
     "Complete Buddies UI/UX redesign with Obsidian dark and Porcelain light themes",
