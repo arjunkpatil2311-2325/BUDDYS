@@ -97,9 +97,6 @@ fun OnboardingScreen(
         color = BuddysTheme.colors.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            BuddysWebDecoration(size = 90.dp, modifier = Modifier.align(Alignment.TopStart))
-            BuddysWebTopRight(size = 90.dp, modifier = Modifier.align(Alignment.TopEnd))
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()

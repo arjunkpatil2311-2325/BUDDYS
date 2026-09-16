@@ -32,8 +32,6 @@ import com.aura.glasschat.security.BiometricAuthManager
 import com.aura.glasschat.security.PinVerificationResult
 import com.aura.glasschat.ui.components.BuddysButton
 import com.aura.glasschat.ui.components.BuddysSpiderEmblem
-import com.aura.glasschat.ui.components.BuddysWebDecoration
-import com.aura.glasschat.ui.components.BuddysWebTopRight
 import com.aura.glasschat.ui.theme.BuddysTheme
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -148,10 +146,6 @@ fun PrivacyLockScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Subtle Web Geometry in Corners
-        BuddysWebDecoration(size = 90.dp, modifier = Modifier.align(Alignment.TopStart))
-        BuddysWebTopRight(size = 90.dp, modifier = Modifier.align(Alignment.TopEnd))
-
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -46,8 +46,11 @@ class UpdateManager(private val context: Context) {
     }
 
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(8, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .retryOnConnectionFailure(true)
         .build()
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -69,6 +72,7 @@ class UpdateManager(private val context: Context) {
             val request = Request.Builder()
                 .url(UPDATE_MANIFEST_URL)
                 .header("Cache-Control", "no-cache")
+                .header("User-Agent", "Buddies-Android/${BuildConfig.VERSION_NAME}")
                 .get()
                 .build()
 
@@ -99,7 +103,7 @@ class UpdateManager(private val context: Context) {
     }
 
     /**
-     * Streams APK download with progress updates.
+     * High-performance streamed APK download with 64KB buffering and throttled progress updates.
      */
     fun downloadApk(manifest: UpdateManifest): Flow<DownloadState> = flow {
         try {
@@ -112,6 +116,7 @@ class UpdateManager(private val context: Context) {
 
             val request = Request.Builder()
                 .url(manifest.apkUrl)
+                .header("User-Agent", "Buddies-Android/${BuildConfig.VERSION_NAME}")
                 .get()
                 .build()
 
@@ -128,26 +133,38 @@ class UpdateManager(private val context: Context) {
             }
 
             val contentLength = responseBody.contentLength()
-            var inputStream: InputStream? = null
-            var outputStream: FileOutputStream? = null
+            var inputStream: java.io.BufferedInputStream? = null
+            var outputStream: java.io.BufferedOutputStream? = null
 
             try {
-                inputStream = responseBody.byteStream()
-                outputStream = FileOutputStream(apkFile)
+                inputStream = java.io.BufferedInputStream(responseBody.byteStream(), 64 * 1024)
+                outputStream = java.io.BufferedOutputStream(FileOutputStream(apkFile), 64 * 1024)
 
-                val buffer = ByteArray(8 * 1024)
+                val buffer = ByteArray(64 * 1024)
                 var bytesRead: Int
                 var totalBytesRead = 0L
                 var lastProgressEmit = 0L
+                var lastEmittedPercent = -1
 
                 while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                     outputStream.write(buffer, 0, bytesRead)
                     totalBytesRead += bytesRead
 
                     val now = System.currentTimeMillis()
-                    // Throttle progress updates to every 100ms
-                    if (now - lastProgressEmit > 100 || totalBytesRead == contentLength) {
+                    val currentPercent = if (contentLength > 0) {
+                        ((totalBytesRead.toDouble() / contentLength.toDouble()) * 100).toInt()
+                    } else {
+                        -1
+                    }
+
+                    // Throttle emissions to every 250ms or on each 1% milestone / finish to prevent UI recomposition lag
+                    val shouldEmit = (now - lastProgressEmit > 250) || 
+                                     (currentPercent != lastEmittedPercent && currentPercent >= 0) || 
+                                     (totalBytesRead == contentLength)
+
+                    if (shouldEmit) {
                         lastProgressEmit = now
+                        lastEmittedPercent = currentPercent
                         val progress = if (contentLength > 0) {
                             (totalBytesRead.toFloat() / contentLength.toFloat()).coerceIn(0f, 1f)
                         } else {
@@ -158,7 +175,12 @@ class UpdateManager(private val context: Context) {
                 }
 
                 outputStream.flush()
-                emit(DownloadState.Success(apkFile))
+
+                if (apkFile.length() < 10 * 1024 * 1024) {
+                    emit(DownloadState.Error("Downloaded file is incomplete or corrupted."))
+                } else {
+                    emit(DownloadState.Success(apkFile))
+                }
 
             } finally {
                 try { inputStream?.close() } catch (_: Exception) {}

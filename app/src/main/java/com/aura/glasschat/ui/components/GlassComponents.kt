@@ -109,8 +109,6 @@ fun AmbientNostalgicBackground(
             .fillMaxSize()
             .background(BuddysTheme.colors.background)
     ) {
-        BuddysWebDecoration(size = 80.dp, modifier = Modifier.align(Alignment.TopStart))
-        BuddysWebTopRight(size = 80.dp, modifier = Modifier.align(Alignment.TopEnd))
         content()
     }
 }

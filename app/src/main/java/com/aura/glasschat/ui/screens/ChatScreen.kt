@@ -184,14 +184,6 @@ fun ChatScreen(
                         RoundedCornerShape(bottomStart = 0.dp, bottomEnd = 0.dp)
                     )
             ) {
-                // Subtle web watermark in header
-                BuddysWebTopRight(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd),
-                    size = 58.dp,
-                    tint = BuddysTheme.colors.primaryRed.copy(alpha = 0.05f)
-                )
-
                 if (uiState.isSelectionMode) {
                     // MULTI-SELECTION TOP BAR
                     Row(

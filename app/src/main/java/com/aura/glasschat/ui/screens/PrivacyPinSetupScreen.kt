@@ -26,8 +26,6 @@ import androidx.compose.ui.unit.sp
 import com.aura.glasschat.security.AppLockManager
 import com.aura.glasschat.ui.components.BuddysSpiderEmblem
 import com.aura.glasschat.ui.components.BuddysTopBar
-import com.aura.glasschat.ui.components.BuddysWebDecoration
-import com.aura.glasschat.ui.components.BuddysWebTopRight
 import com.aura.glasschat.ui.theme.BuddysTheme
 
 @Composable
@@ -102,9 +100,6 @@ fun PrivacyPinSetupScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        BuddysWebDecoration(size = 80.dp, modifier = Modifier.align(Alignment.TopStart))
-        BuddysWebTopRight(size = 80.dp, modifier = Modifier.align(Alignment.TopEnd))
-
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,

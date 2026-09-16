@@ -154,19 +154,6 @@ fun TapToBuddyScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                BuddysWebDecoration(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(top = 70.dp, start = 8.dp),
-                    size = 110.dp
-                )
-                BuddysWebTopRight(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 70.dp, end = 8.dp),
-                    size = 110.dp
-                )
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()

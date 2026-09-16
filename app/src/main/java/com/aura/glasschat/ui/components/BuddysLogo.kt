@@ -20,77 +20,43 @@ import androidx.compose.ui.unit.sp
 import com.aura.glasschat.ui.theme.BuddysTheme
 
 /**
- * Original Abstract BUDDYS Spider/Web Emblem Vector.
- * Minimalist geometric mark featuring 8 angular web legs extending from a central diamond node.
+ * Modern Sleek BUDDYS Connection Emblem Vector.
+ * Minimalist geometric mark representing two connected buds/circles (Buddies).
  */
 @Composable
 fun BuddysSpiderEmblem(
     modifier: Modifier = Modifier,
     size: Dp = 32.dp,
-    tint: Color = BuddysTheme.colors.primaryRed
+    tint: Color = BuddysTheme.colors.primaryAccent
 ) {
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
         val h = this.size.height
-        val cx = w / 2f
-        val cy = h / 2f
+        val r = w * 0.22f
+        val strokeWidth = (w * 0.10f).coerceAtLeast(2f)
 
-        // Central Diamond Core
-        val corePath = Path().apply {
-            moveTo(cx, cy - h * 0.22f)
-            lineTo(cx + w * 0.16f, cy)
-            lineTo(cx, cy + h * 0.24f)
-            lineTo(cx - w * 0.16f, cy)
-            close()
-        }
-        drawPath(path = corePath, color = tint)
+        // Left Buddy Ring
+        drawCircle(
+            color = tint,
+            radius = r,
+            center = Offset(w * 0.35f, h * 0.5f),
+            style = Stroke(width = strokeWidth)
+        )
 
-        val strokeWidth = (w * 0.055f).coerceAtLeast(1.5f)
+        // Right Buddy Ring (Interlinked)
+        drawCircle(
+            color = tint.copy(alpha = 0.85f),
+            radius = r,
+            center = Offset(w * 0.65f, h * 0.5f),
+            style = Stroke(width = strokeWidth)
+        )
 
-        // Upper Angled Web Legs (Left & Right)
-        val upperLeft = Path().apply {
-            moveTo(cx - w * 0.10f, cy - h * 0.10f)
-            lineTo(cx - w * 0.32f, cy - h * 0.36f)
-            lineTo(cx - w * 0.44f, cy - h * 0.30f)
-        }
-        drawPath(upperLeft, color = tint, style = Stroke(strokeWidth, cap = StrokeCap.Round))
-
-        val upperRight = Path().apply {
-            moveTo(cx + w * 0.10f, cy - h * 0.10f)
-            lineTo(cx + w * 0.32f, cy - h * 0.36f)
-            lineTo(cx + w * 0.44f, cy - h * 0.30f)
-        }
-        drawPath(upperRight, color = tint, style = Stroke(strokeWidth, cap = StrokeCap.Round))
-
-        // Mid Web Legs (Left & Right)
-        val midLeft = Path().apply {
-            moveTo(cx - w * 0.14f, cy)
-            lineTo(cx - w * 0.38f, cy - h * 0.06f)
-            lineTo(cx - w * 0.46f, cy + h * 0.08f)
-        }
-        drawPath(midLeft, color = tint, style = Stroke(strokeWidth, cap = StrokeCap.Round))
-
-        val midRight = Path().apply {
-            moveTo(cx + w * 0.14f, cy)
-            lineTo(cx + w * 0.38f, cy - h * 0.06f)
-            lineTo(cx + w * 0.46f, cy + h * 0.08f)
-        }
-        drawPath(midRight, color = tint, style = Stroke(strokeWidth, cap = StrokeCap.Round))
-
-        // Lower Long Web Legs (Left & Right)
-        val lowerLeft = Path().apply {
-            moveTo(cx - w * 0.08f, cy + h * 0.12f)
-            lineTo(cx - w * 0.30f, cy + h * 0.34f)
-            lineTo(cx - w * 0.22f, cy + h * 0.45f)
-        }
-        drawPath(lowerLeft, color = tint, style = Stroke(strokeWidth, cap = StrokeCap.Round))
-
-        val lowerRight = Path().apply {
-            moveTo(cx + w * 0.08f, cy + h * 0.12f)
-            lineTo(cx + w * 0.30f, cy + h * 0.34f)
-            lineTo(cx + w * 0.22f, cy + h * 0.45f)
-        }
-        drawPath(lowerRight, color = tint, style = Stroke(strokeWidth, cap = StrokeCap.Round))
+        // Central connection pulse dot
+        drawCircle(
+            color = tint,
+            radius = strokeWidth * 0.7f,
+            center = Offset(w * 0.5f, h * 0.5f)
+        )
     }
 }
 

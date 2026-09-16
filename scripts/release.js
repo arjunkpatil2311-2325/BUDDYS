@@ -199,9 +199,11 @@ function getReleaseNotes() {
         return customNotes.split(',').map(s => s.trim()).filter(Boolean);
     }
     return [
-        'Tap to Buddy peer-to-peer media sharing',
-        'Rebranded to Buddies with ultra-smooth UI',
-        'Enhanced connectivity and stability improvements'
+        'Complete Buddies UI/UX redesign with Obsidian dark and Porcelain light themes',
+        'Fluid spring animations and minimal gesture navigation',
+        'High-performance update manager with fast buffered streaming downloads',
+        'Draggable picture-in-picture floating active call overlay',
+        'Stability enhancements and performance optimizations'
     ];
 }
 
@@ -269,7 +271,7 @@ function triggerGitRelease() {
         execSync(`git tag ${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'inherit' });
 
         console.log('Pushing commit and tag to GitHub (automatically triggering GitHub Actions)...');
-        execSync(`git push origin HEAD:main --tags`, { cwd: PROJECT_ROOT, stdio: 'inherit' });
+        execSync(`git push origin HEAD:main ${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'inherit' });
 
         console.log('✅ Successfully pushed release tag to GitHub.');
     } catch (e) {
