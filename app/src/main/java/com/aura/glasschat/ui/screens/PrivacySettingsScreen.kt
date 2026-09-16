@@ -858,13 +858,13 @@ fun PrivacySettingsScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
-                                            text = "Buddies for Android",
+                                            text = "Buddies",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 15.sp,
                                             color = BuddysTheme.colors.textPrimary
                                         )
                                         Text(
-                                            text = "Version ${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
+                                            text = "Version ${BuildConfig.VERSION_NAME}",
                                             fontSize = 12.5.sp,
                                             color = BuddysTheme.colors.textSecondary
                                         )

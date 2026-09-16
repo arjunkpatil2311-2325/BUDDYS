@@ -41,6 +41,7 @@ const isDryRun = args.includes('--dry-run');
 const isMandatory = args.includes('--mandatory');
 const skipBuild = args.includes('--skip-build');
 const allowDowngrade = args.includes('--allow-downgrade');
+const force = args.includes('--force') || args.includes('-f');
 
 let rawVersion = args.find(a => !a.startsWith('--') && a !== 'release' && a !== 'Buddies');
 const notesArgIndex = args.indexOf('--notes');
@@ -87,11 +88,13 @@ if (!currentVersionNameMatch || !currentVersionCodeMatch) {
 
 const currentVersionName = currentVersionNameMatch[1];
 const currentVersionCode = parseInt(currentVersionCodeMatch[1], 10);
-const newVersionCode = currentVersionCode + 1;
+const codeArgIndex = args.indexOf('--code');
+const explicitCode = codeArgIndex !== -1 && args[codeArgIndex + 1] ? parseInt(args[codeArgIndex + 1], 10) : null;
+const newVersionCode = explicitCode || (cleanVersion === currentVersionName ? currentVersionCode : currentVersionCode + 1);
 
 console.log(`Current versionName: ${currentVersionName}`);
 console.log(`Current versionCode: ${currentVersionCode}`);
-console.log(`New versionCode:     ${newVersionCode}`);
+console.log(`Target versionCode:  ${newVersionCode}`);
 
 // Version comparison check
 function parseSemVer(v) {
@@ -120,9 +123,9 @@ async function checkGitHubTag() {
     try {
         const url = `https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${releaseTag}`;
         const res = await fetch(url, { headers: { 'User-Agent': 'Buddies-Release-Engine' } });
-        if (res.status === 200) {
+        if (!force && res.status === 200) {
             const data = await res.json();
-            throw new Error(`GitHub Release ${releaseTag} already exists! Published at: ${data.published_at}. Please increment the version.`);
+            throw new Error(`GitHub Release ${releaseTag} already exists! Published at: ${data.published_at}. Pass --force to overwrite or increment the version.`);
         }
     } catch (e) {
         if (e.message.includes('already exists')) {
@@ -267,11 +270,16 @@ function triggerGitRelease() {
             console.log('Working tree already committed.');
         }
 
+        if (force) {
+            try { execSync(`git tag -d ${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'ignore' }); } catch (_) {}
+            try { execSync(`git push origin :refs/tags/${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'ignore' }); } catch (_) {}
+        }
+
         console.log(`Creating tag ${releaseTag}...`);
-        execSync(`git tag ${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'inherit' });
+        execSync(`git tag ${force ? '-f ' : ''}${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'inherit' });
 
         console.log('Pushing commit and tag to GitHub (automatically triggering GitHub Actions)...');
-        execSync(`git push origin HEAD:main ${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'inherit' });
+        execSync(`git push origin HEAD:main ${force ? '-f ' : ''}${releaseTag}`, { cwd: PROJECT_ROOT, stdio: 'inherit' });
 
         console.log('✅ Successfully pushed release tag to GitHub.');
     } catch (e) {

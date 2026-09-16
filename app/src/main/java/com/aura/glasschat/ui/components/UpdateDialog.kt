@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.aura.glasschat.BuildConfig
 import com.aura.glasschat.data.update.UpdateManifest
 import com.aura.glasschat.ui.theme.BuddysTheme
 import com.aura.glasschat.ui.viewmodel.UpdateUiState
@@ -162,19 +163,44 @@ fun UpdateDialog(
                         }
 
                         Text(
-                            text = "Buddies v$targetVersion",
+                            text = "Buddies $targetVersion is available",
                             color = BuddysTheme.colors.textPrimary,
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
                             letterSpacing = (-0.5).sp
                         )
 
-                        if (fileSizeText.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = "Package Size: $fileSizeText",
+                                text = "Current: Version ${BuildConfig.VERSION_NAME}",
                                 color = BuddysTheme.colors.textSecondary,
                                 fontSize = 12.sp,
+                                fontWeight = FontWeight.Normal
+                            )
+                            Text(
+                                text = "•",
+                                color = BuddysTheme.colors.textMuted,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = "New: Version $targetVersion",
+                                color = BuddysTheme.colors.primaryAccent,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        if (fileSizeText.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = "Package Size: $fileSizeText",
+                                color = BuddysTheme.colors.textMuted,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }
