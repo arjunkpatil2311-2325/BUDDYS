@@ -12,7 +12,7 @@ on:
         default: '0.3.0'
         type: string
       release_notes:
-        description: 'Release notes (comma-separated or text)'
+        description: 'Release notes'
         required: false
         default: 'Tap to Buddy peer-to-peer media sharing, Rebranded to Buddies with ultra-smooth UI, Enhanced connectivity and stability improvements'
         type: string
@@ -32,19 +32,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accept Android SDK Licenses
+        run: yes | sdkmanager --licenses || true
 
       - name: Make gradlew executable
         run: chmod +x gradlew
@@ -56,21 +54,35 @@ jobs:
         run: |
           APK_PATH="app/build/outputs/apk/debug/app-universal-debug.apk"
           if [ ! -f "$APK_PATH" ]; then
-            echo "Universal APK not found!"
+            echo "❌ Universal APK not found at $APK_PATH!"
             exit 1
           fi
           SIZE=$(stat -c%s "$APK_PATH" 2>/dev/null || stat -f%z "$APK_PATH")
-          echo "Built APK size: $SIZE bytes"
+          echo "✅ Built APK verified. Size: $SIZE bytes"
           if [ "$SIZE" -lt 10485760 ]; then
-            echo "APK is too small ($SIZE bytes)"
+            echo "❌ APK is suspiciously small ($SIZE bytes)"
             exit 1
           fi
+
+      - name: Determine Release Tag and Name
+        id: release_meta
+        run: |
+          if [ -n "${{ github.ref_name }}" ] && [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+            VER="${TAG#v}"
+          else
+            INPUT_VER="${{ inputs.version }}"
+            VER="${INPUT_VER#v}"
+            TAG="v${VER}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release and Upload Asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || format('v{0}', inputs.version) }}
-          name: Buddies ${{ github.ref_name || inputs.version }}
+          tag_name: ${{ steps.release_meta.outputs.tag }}
+          name: Buddies v${{ steps.release_meta.outputs.version }}
           body: ${{ inputs.release_notes || 'Buddies Android App Release - Tap to Buddy P2P Media Sharing & Performance Enhancements' }}
           files: app/build/outputs/apk/debug/app-universal-debug.apk
           draft: false
