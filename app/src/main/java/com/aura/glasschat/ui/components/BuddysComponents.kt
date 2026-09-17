@@ -26,6 +26,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.aura.glasschat.ui.theme.*
 
 // ====================================================================
@@ -592,4 +597,253 @@ fun BuddysFollowButton(
         }
     }
 }
+
+/**
+ * Social Feed Moment Card (Instagram/Snapchat hybrid style).
+ * Supports author avatar with story ring, double tap like, media preview, interactive reactions, comments, bookmarking.
+ */
+@Composable
+fun SocialFeedMomentCard(
+    authorName: String,
+    authorHandle: String,
+    authorAvatarUrl: String? = null,
+    timeAgo: String,
+    caption: String,
+    mediaUrl: String? = null,
+    likeCount: Int = 0,
+    commentCount: Int = 0,
+    isLiked: Boolean = false,
+    isBookmarked: Boolean = false,
+    onLikeClick: () -> Unit,
+    onBookmarkClick: () -> Unit,
+    onCommentClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onAuthorClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    BuddysCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        backgroundColor = BuddysTheme.colors.surface,
+        borderColor = BuddysTheme.colors.border,
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            // 1. Author Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = onAuthorClick != null) { onAuthorClick?.invoke() },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Avatar with Story Ring gradient
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(StoryRingGradient)
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(BuddysTheme.colors.surface)
+                            .padding(1.5.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!authorAvatarUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = authorAvatarUrl,
+                                contentDescription = authorName,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
+                                    .background(BuddysTheme.colors.surfaceSecondary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = authorName.take(1).uppercase(),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = BuddysTheme.colors.primaryRed
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = authorName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = BuddysTheme.colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = if (authorHandle.startsWith("@")) authorHandle else "@$authorHandle • $timeAgo",
+                        fontSize = 12.sp,
+                        color = BuddysTheme.colors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Options",
+                    tint = BuddysTheme.colors.textMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 2. Caption
+            if (caption.isNotBlank()) {
+                Text(
+                    text = caption,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = BuddysTheme.colors.textPrimary
+                    ),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            // 3. Media Preview (if present)
+            if (!mediaUrl.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(BuddysTheme.colors.surfaceSecondary)
+                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = { onLikeClick() }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = mediaUrl,
+                        contentDescription = "Moment media",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // 4. Action Bar (Like, Comment, Direct Share, Bookmark)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Like button
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(onClick = onLikeClick)
+                            .padding(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        if (likeCount > 0) {
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = likeCount.toString(),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary
+                            )
+                        }
+                    }
+
+                    // Comment button
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(onClick = onCommentClick)
+                            .padding(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChatBubbleOutline,
+                            contentDescription = "Comment",
+                            tint = BuddysTheme.colors.textSecondary,
+                            modifier = Modifier.size(21.dp)
+                        )
+                        if (commentCount > 0) {
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = commentCount.toString(),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = BuddysTheme.colors.textSecondary
+                            )
+                        }
+                    }
+
+                    // Share button
+                    IconButton(
+                        onClick = onShareClick,
+                        modifier = Modifier.size(30.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = "Share",
+                            tint = BuddysTheme.colors.textSecondary,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                }
+
+                // Bookmark button
+                IconButton(
+                    onClick = onBookmarkClick,
+                    modifier = Modifier.size(30.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Bookmark",
+                        tint = if (isBookmarked) BuddysTheme.colors.warning else BuddysTheme.colors.textSecondary,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 

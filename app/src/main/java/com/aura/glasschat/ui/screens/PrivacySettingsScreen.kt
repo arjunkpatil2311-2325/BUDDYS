@@ -215,43 +215,7 @@ fun PrivacySettingsScreen(
                                 )
                             }
 
-                            HorizontalDivider(color = BuddysTheme.colors.border)
 
-                            // Hidden Chats
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onOpenHiddenChats() }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = null,
-                                    tint = BuddysTheme.colors.primaryRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(14.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Hidden Chats",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = BuddysTheme.colors.textPrimary
-                                    )
-                                    Text(
-                                        text = "PIN-locked hidden conversations",
-                                        fontSize = 11.5.sp,
-                                        color = BuddysTheme.colors.textSecondary
-                                    )
-                                }
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                    contentDescription = null,
-                                    tint = BuddysTheme.colors.textMuted,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
 
                             HorizontalDivider(color = BuddysTheme.colors.border)
 

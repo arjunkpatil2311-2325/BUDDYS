@@ -56,9 +56,11 @@ import com.aura.glasschat.ui.viewmodel.SearchUserItem
 import com.aura.glasschat.ui.viewmodel.SearchViewModel
 import com.aura.glasschat.ui.viewmodel.StoryViewModel
 import com.aura.glasschat.util.ChatUtils
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 enum class HomeBottomTab {
-    CHATS, UPDATES, CALLS, PROFILE
+    HOME, SEARCH, CREATE, INBOX, PROFILE
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,9 +99,12 @@ fun HomeScreen(
     val unreadNotifs by followRepository.observeUnreadNotificationCount(currentUid).collectAsState(initial = 0)
     val context = LocalContext.current
 
-    var selectedTab by remember { mutableStateOf(HomeBottomTab.CHATS) }
+    var selectedTab by remember { mutableStateOf(HomeBottomTab.HOME) }
     var selectedChatForMenu by remember { mutableStateOf<Chat?>(null) }
     var chatFilterChip by remember { mutableStateOf("ALL") } // ALL, UNREAD, CLOSE_FRIENDS, GROUPS, PINNED
+    var momentCommentInput by remember { mutableStateOf("") }
+    var likedMoments by remember { mutableStateOf(setOf<String>()) }
+    var bookmarkedMoments by remember { mutableStateOf(setOf<String>()) }
 
     val appLockManager = remember { com.aura.glasschat.security.AppLockManager.getInstance(context) }
     val pinManager = appLockManager.pinManager
@@ -180,9 +185,431 @@ fun HomeScreen(
             ) {
                 when (selectedTab) {
                     // ===================================================
-                    // TAB 1: CHATS (PRIMARY MESSAGING HUB)
+                    // TAB 1: HOME (STORIES CAROUSEL + MOMENTS SOCIAL FEED)
                     // ===================================================
-                    HomeBottomTab.CHATS -> {
+                    HomeBottomTab.HOME -> {
+                        val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
+                        val availableUpdate by updateManager.availableUpdate.collectAsState()
+
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = 80.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // 0. Offline State Banner
+                                if (!uiState.isOnline) {
+                                    item {
+                                        Surface(
+                                            color = Color(0xFFD92D35),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(Icons.Default.CloudOff, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Waiting for network connection...", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 1. Top Header: [Avatar] [Brand]  [Search] [Add] [Notifications]
+                                item {
+                                    TopBuddysHeader(
+                                        userAvatarUrl = currentUser?.avatarUrl,
+                                        userDisplayName = currentUser?.displayName ?: "Me",
+                                        unreadNotificationCount = unreadNotifs,
+                                        onProfileClick = { selectedTab = HomeBottomTab.PROFILE },
+                                        onSearchClick = { selectedTab = HomeBottomTab.SEARCH },
+                                        onActivityClick = onOpenNotifications,
+                                        onAddFriendClick = onOpenAddFriend
+                                    )
+                                }
+
+                                // 2. Profile Notes & 24h Stories Header (Instagram/Telegram carousel)
+                                item {
+                                    LazyRow(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // User's own note bubble + story avatar
+                                        item {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                modifier = Modifier.width(72.dp).clickable { viewModel.openNoteDialog() }
+                                            ) {
+                                                Box(contentAlignment = Alignment.TopCenter) {
+                                                    Surface(
+                                                        color = BuddysTheme.colors.surface,
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
+                                                        modifier = Modifier.padding(bottom = 6.dp)
+                                                    ) {
+                                                        val noteDisplay = if (currentUser?.isNoteActive == true && !currentUser.note.isNullOrBlank()) currentUser.note else "+ Thought"
+                                                        Text(
+                                                            text = noteDisplay,
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            color = if (currentUser?.isNoteActive == true) BuddysTheme.colors.textPrimary else BuddysTheme.colors.primaryRed,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                AvatarView(
+                                                    imageUrl = currentUser?.avatarUrl,
+                                                    displayName = currentUser?.displayName ?: "Me",
+                                                    size = 54.dp,
+                                                    isOnline = true
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = "Your note",
+                                                    fontSize = 11.sp,
+                                                    color = BuddysTheme.colors.textSecondary,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+
+                                        // Active Stories from Friends
+                                        items(storyUiState.activeUserStories, key = { it.userId }) { userStory ->
+                                            if (userStory.userId != currentUid) {
+                                                val isCloseFriend = currentUser?.closeFriends?.contains(userStory.userId) == true
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    modifier = Modifier.width(66.dp).clickable { onOpenStoryViewer(userStory.userId) }
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(58.dp)
+                                                            .border(
+                                                                2.dp,
+                                                                if (isCloseFriend) Brush.linearGradient(listOf(Color(0xFF22A06B), Color(0xFF28B772)))
+                                                                else if (userStory.hasUnreadFor(currentUid)) StoryRingGradient
+                                                                else Brush.linearGradient(listOf(BuddysTheme.colors.border, BuddysTheme.colors.border)),
+                                                                CircleShape
+                                                            )
+                                                            .padding(3.dp)
+                                                    ) {
+                                                        AvatarView(
+                                                            imageUrl = userStory.userAvatarUrl,
+                                                            displayName = userStory.userDisplayName,
+                                                            size = 52.dp
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = userStory.userDisplayName.ifBlank { userStory.username },
+                                                        fontSize = 11.sp,
+                                                        color = BuddysTheme.colors.textPrimary,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 3. Update Available Banner
+                                if (availableUpdate != null) {
+                                    item {
+                                        UpdateAvailableBanner(
+                                            manifest = availableUpdate!!,
+                                            onUpdateClick = { updateManager.requestUpdatePrompt(it) },
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                // 4. Section Header: Moments Feed
+                                item {
+                                    BuddysSectionHeader(
+                                        title = "MOMENTS",
+                                        actionText = "Create",
+                                        onActionClick = onOpenCreateStory,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    )
+                                }
+
+                                // 5. Moments Social Feed Cards
+                                item {
+                                    SocialFeedMomentCard(
+                                        authorName = "Buddies",
+                                        authorHandle = "buddies_app",
+                                        authorAvatarUrl = null,
+                                        timeAgo = "Just now",
+                                        caption = "Welcome to Buddies v0.4.1 ✨ Fast, private, and beautifully organized moments with your closest friends.",
+                                        likeCount = if (likedMoments.contains("welcome_post")) 43 else 42,
+                                        commentCount = 5,
+                                        isLiked = likedMoments.contains("welcome_post"),
+                                        isBookmarked = bookmarkedMoments.contains("welcome_post"),
+                                        onLikeClick = {
+                                            likedMoments = if (likedMoments.contains("welcome_post")) likedMoments - "welcome_post" else likedMoments + "welcome_post"
+                                        },
+                                        onBookmarkClick = {
+                                            bookmarkedMoments = if (bookmarkedMoments.contains("welcome_post")) bookmarkedMoments - "welcome_post" else bookmarkedMoments + "welcome_post"
+                                        },
+                                        onCommentClick = { selectedTab = HomeBottomTab.INBOX },
+                                        onShareClick = { onOpenAddFriend() }
+                                    )
+                                }
+
+                                // 6. If user has active stories, show them as moments in feed
+                                items(storyUiState.activeUserStories, key = { "moment_${it.userId}" }) { userStory ->
+                                    val storyItem = userStory.stories.firstOrNull()
+                                    if (storyItem != null) {
+                                        val momentId = "story_moment_${userStory.userId}"
+                                        SocialFeedMomentCard(
+                                            authorName = userStory.userDisplayName.ifBlank { userStory.username },
+                                            authorHandle = userStory.username,
+                                            authorAvatarUrl = userStory.userAvatarUrl,
+                                            timeAgo = "Active story",
+                                            caption = storyItem.caption ?: "Shared a moment on Buddies ✨",
+                                            mediaUrl = storyItem.mediaUrl,
+                                            likeCount = if (likedMoments.contains(momentId)) 13 else 12,
+                                            commentCount = 2,
+                                            isLiked = likedMoments.contains(momentId),
+                                            isBookmarked = bookmarkedMoments.contains(momentId),
+                                            onLikeClick = {
+                                                likedMoments = if (likedMoments.contains(momentId)) likedMoments - momentId else likedMoments + momentId
+                                            },
+                                            onBookmarkClick = {
+                                                bookmarkedMoments = if (bookmarkedMoments.contains(momentId)) bookmarkedMoments - momentId else bookmarkedMoments + momentId
+                                            },
+                                            onCommentClick = {
+                                                val chatId = ChatUtils.getDeterministicChatId(currentUid, userStory.userId)
+                                                onOpenChat(chatId, userStory.userId)
+                                            },
+                                            onShareClick = { onOpenAddFriend() }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ===================================================
+                    // TAB 2: SEARCH / DISCOVER & EXPLORE
+                    // ===================================================
+                    HomeBottomTab.SEARCH -> {
+                        val searchUiState by searchViewModel.uiState.collectAsState()
+                        val scanner = remember(context) { GmsBarcodeScanning.getClient(context) }
+
+                        Column(modifier = Modifier.fillMaxSize().padding(bottom = 80.dp)) {
+                            // Top Bar
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    BuddysSearchBar(
+                                        query = searchUiState.query,
+                                        onQueryChange = { searchViewModel.onQueryChanged(it) },
+                                        placeholder = "Search by @username or name..."
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                IconButton(
+                                    onClick = {
+                                        scanner.startScan()
+                                            .addOnSuccessListener { barcode: Barcode ->
+                                                val raw = barcode.rawValue
+                                                if (!raw.isNullOrBlank()) {
+                                                    searchViewModel.lookupQrUser(
+                                                        rawPayload = raw,
+                                                        onUserFound = { user ->
+                                                            onOpenPublicProfile(user.uid)
+                                                        },
+                                                        onError = { error ->
+                                                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                Toast.makeText(context, "Scan cancelled or failed", Toast.LENGTH_SHORT).show()
+                                            }
+                                    },
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(BuddysTheme.colors.surfaceSecondary)
+                                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCodeScanner,
+                                        contentDescription = "Scan QR Code",
+                                        tint = BuddysTheme.colors.primaryRed,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+
+                            // Content area
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                when {
+                                    searchUiState.isLoading -> {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(36.dp).align(Alignment.Center),
+                                            color = BuddysTheme.colors.primaryRed,
+                                            strokeWidth = 3.dp
+                                        )
+                                    }
+                                    searchUiState.query.isBlank() -> {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .verticalScroll(rememberScrollState()),
+                                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                                        ) {
+                                            BuddysSectionHeader(
+                                                title = "DISCOVER BUDDIES",
+                                                actionText = "Pair Code",
+                                                onActionClick = onOpenAddFriend
+                                            )
+
+                                            BuddysEmptyState(
+                                                title = "Explore Buddies Network",
+                                                subtitle = "Find friends by username, scan QR codes, or share your profile.",
+                                                icon = Icons.Default.Search,
+                                                actionText = "Find Buddies",
+                                                onActionClick = onOpenAddFriend
+                                            )
+                                        }
+                                    }
+                                    searchUiState.results.isEmpty() -> {
+                                        BuddysEmptyState(
+                                            title = "No users found",
+                                            subtitle = "We couldn't find any account matching '${searchUiState.query}'.",
+                                            icon = Icons.Default.PersonSearch
+                                        )
+                                    }
+                                    else -> {
+                                        LazyColumn(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentPadding = PaddingValues(vertical = 8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            items(searchUiState.results, key = { it.user.uid }) { searchItem ->
+                                                SearchUserRow(
+                                                    item = searchItem,
+                                                    onClick = { onOpenPublicProfile(searchItem.user.uid) },
+                                                    onFollowClick = { searchViewModel.toggleFollow(searchItem.user) }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ===================================================
+                    // TAB 3: CREATE (STORY, MOMENT, THOUGHT, PAIR CODE)
+                    // ===================================================
+                    HomeBottomTab.CREATE -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp, vertical = 16.dp)
+                                .padding(bottom = 80.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "Create & Share",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = BuddysTheme.colors.textPrimary,
+                                    fontSize = 24.sp
+                                )
+                            )
+
+                            Text(
+                                text = "Choose what you'd like to share with your buddies.",
+                                fontSize = 13.5.sp,
+                                color = BuddysTheme.colors.textSecondary
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            BuddysCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                                    ActionSheetRow(
+                                        icon = Icons.Default.CameraAlt,
+                                        title = "24-Hour Story",
+                                        subtitle = "Photo or video disappearing in 24 hours",
+                                        badgeColor = BuddysTheme.colors.surfaceSecondary,
+                                        iconTint = BuddysTheme.colors.primaryRed,
+                                        onClick = onOpenCreateStory
+                                    )
+
+                                    HorizontalDivider(color = BuddysTheme.colors.border)
+
+                                    ActionSheetRow(
+                                        icon = Icons.Default.AutoAwesome,
+                                        title = "Post Moment to Feed",
+                                        subtitle = "Permanent social update for your friends",
+                                        badgeColor = BuddysTheme.colors.surfaceSecondary,
+                                        iconTint = Color(0xFF22A06B),
+                                        onClick = onOpenCreateStory
+                                    )
+
+                                    HorizontalDivider(color = BuddysTheme.colors.border)
+
+                                    ActionSheetRow(
+                                        icon = Icons.Default.EditNote,
+                                        title = "Thought Note",
+                                        subtitle = "Status thought bubble above your profile",
+                                        badgeColor = BuddysTheme.colors.surfaceSecondary,
+                                        iconTint = Color(0xFF0084FF),
+                                        onClick = {
+                                            viewModel.openNoteDialog()
+                                        }
+                                    )
+
+                                    HorizontalDivider(color = BuddysTheme.colors.border)
+
+                                    ActionSheetRow(
+                                        icon = Icons.Default.GroupAdd,
+                                        title = "Pair Buddy Code",
+                                        subtitle = "Generate or enter 15-minute temporary code",
+                                        badgeColor = BuddysTheme.colors.surfaceSecondary,
+                                        iconTint = BuddysTheme.colors.primaryRed,
+                                        onClick = onOpenAddFriend
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // ===================================================
+                    // TAB 4: INBOX (DIRECT MESSAGES HUB)
+                    // ===================================================
+                    HomeBottomTab.INBOX -> {
                         val totalUnreadChats = uiState.chats.count { it.hasUnread(currentUid) }
                         val categories = listOf(
                             "ALL" to ("All" to null),
@@ -193,140 +620,69 @@ fun HomeScreen(
                         )
 
                         val chatsToDisplay = uiState.filteredChats.filter { chat ->
-                            val otherUid = chat.getOtherParticipantUid(currentUid)
-                            when (chatFilterChip) {
-                                "UNREAD" -> chat.hasUnread(currentUid)
-                                "PINNED" -> chat.isPinned(currentUid)
-                                "CLOSE_FRIENDS" -> currentUser?.closeFriends?.contains(otherUid) == true
-                                "GROUPS" -> chat.participants.size > 2
-                                else -> true
+                            !chat.isHidden(currentUid) && run {
+                                val otherUid = chat.getOtherParticipantUid(currentUid)
+                                when (chatFilterChip) {
+                                    "UNREAD" -> chat.hasUnread(currentUid)
+                                    "PINNED" -> chat.isPinned(currentUid)
+                                    "CLOSE_FRIENDS" -> currentUser?.closeFriends?.contains(otherUid) == true
+                                    "GROUPS" -> chat.participants.size > 2
+                                    else -> true
+                                }
                             }
                         }
 
                         Box(modifier = Modifier.fillMaxSize()) {
                             Column(modifier = Modifier.fillMaxSize()) {
-                                // Offline State Banner
-                                if (!uiState.isOnline) {
-                                    Surface(
-                                        color = Color(0xFFD92D35),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(Icons.Default.CloudOff, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Waiting for network connection...", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-
-                                // 1. Top Header: [Avatar] [Brand]  [Search] [Add] [Notifications]
-                                TopBuddysHeader(
-                                    userAvatarUrl = currentUser?.avatarUrl,
-                                    userDisplayName = currentUser?.displayName ?: "Me",
-                                    unreadNotificationCount = unreadNotifs,
-                                    onProfileClick = { selectedTab = HomeBottomTab.PROFILE },
-                                    onSearchClick = onOpenSearch,
-                                    onActivityClick = onOpenNotifications,
-                                    onAddFriendClick = onOpenAddFriend
-                                )
-
-                                // 2. Profile Notes & Stories Header (Instagram/Telegram carousel)
-                                LazyRow(
+                                // Top Header for Inbox: [Inbox Title] [Search] [Add]
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // User's own note bubble + story avatar
-                                    item {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            modifier = Modifier.width(72.dp).clickable { viewModel.openNoteDialog() }
+                                    Text(
+                                        text = "Inbox",
+                                        style = MaterialTheme.typography.headlineMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = BuddysTheme.colors.textPrimary,
+                                            fontSize = 24.sp
+                                        )
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        IconButton(
+                                            onClick = { selectedTab = HomeBottomTab.SEARCH },
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .clip(CircleShape)
+                                                .background(BuddysTheme.colors.surfaceSecondary)
                                         ) {
-                                            Box(contentAlignment = Alignment.TopCenter) {
-                                                Surface(
-                                                    color = BuddysTheme.colors.surface,
-                                                    shape = RoundedCornerShape(12.dp),
-                                                    border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
-                                                    modifier = Modifier.padding(bottom = 6.dp)
-                                                ) {
-                                                    val noteDisplay = if (currentUser?.isNoteActive == true && !currentUser.note.isNullOrBlank()) currentUser.note else "+ Thought"
-                                                    Text(
-                                                        text = noteDisplay,
-                                                        fontSize = 10.sp,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color = if (currentUser?.isNoteActive == true) BuddysTheme.colors.textPrimary else BuddysTheme.colors.primaryRed,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-
-                                            AvatarView(
-                                                imageUrl = currentUser?.avatarUrl,
-                                                displayName = currentUser?.displayName ?: "Me",
-                                                size = 52.dp,
-                                                isOnline = true
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "Your note",
-                                                fontSize = 11.sp,
-                                                color = BuddysTheme.colors.textSecondary,
-                                                maxLines = 1
+                                            Icon(
+                                                imageVector = Icons.Default.Search,
+                                                contentDescription = "Search",
+                                                tint = BuddysTheme.colors.textPrimary,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
-                                    }
-
-                                    // Active Stories
-                                    items(storyUiState.activeUserStories, key = { it.userId }) { userStory ->
-                                        if (userStory.userId != currentUid) {
-                                            val isCloseFriend = currentUser?.closeFriends?.contains(userStory.userId) == true
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                modifier = Modifier.width(64.dp).clickable { onOpenStoryViewer(userStory.userId) }
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(56.dp)
-                                                        .border(
-                                                            2.dp,
-                                                            if (isCloseFriend) Brush.linearGradient(listOf(Color(0xFF22A06B), Color(0xFF28B772)))
-                                                            else if (userStory.hasUnreadFor(currentUid)) StoryRingGradient
-                                                            else Brush.linearGradient(listOf(BuddysTheme.colors.border, BuddysTheme.colors.border)),
-                                                            CircleShape
-                                                        )
-                                                        .padding(3.dp)
-                                                ) {
-                                                    AvatarView(
-                                                        imageUrl = userStory.userAvatarUrl,
-                                                        displayName = userStory.userDisplayName,
-                                                        size = 50.dp
-                                                    )
-                                                }
-                                                Spacer(modifier = Modifier.height(2.dp))
-                                                Text(
-                                                    text = userStory.userDisplayName.ifBlank { userStory.username },
-                                                    fontSize = 11.sp,
-                                                    color = BuddysTheme.colors.textPrimary,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
+                                        IconButton(
+                                            onClick = onOpenAddFriend,
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .clip(CircleShape)
+                                                .background(BuddysTheme.colors.primaryRed)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.PersonAdd,
+                                                contentDescription = "Add Buddy",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(19.dp)
+                                            )
                                         }
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                // 3. Filter Category Pills
+                                // Filter Category Pills
                                 LazyRow(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -346,53 +702,9 @@ fun HomeScreen(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(2.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
 
-                                // 4. Hidden Chats Tile (if any exist)
-                                if (uiState.hiddenChatsCount > 0) {
-                                    Surface(
-                                        color = BuddysTheme.colors.surfaceSecondary,
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 4.dp)
-                                            .clickable { onOpenHiddenChats() }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Lock,
-                                                contentDescription = null,
-                                                tint = BuddysTheme.colors.primaryRed,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = "Hidden Chats",
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.5.sp,
-                                                    color = BuddysTheme.colors.textPrimary
-                                                )
-                                                Text(
-                                                    text = "${uiState.hiddenChatsCount} conversations protected with PIN",
-                                                    fontSize = 11.sp,
-                                                    color = BuddysTheme.colors.textSecondary
-                                                )
-                                            }
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                                contentDescription = null,
-                                                tint = BuddysTheme.colors.textMuted,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // 5. Chat Feed List
+                                // Chat Feed List
                                 if (chatsToDisplay.isEmpty()) {
                                     Box(
                                         modifier = Modifier
@@ -401,11 +713,13 @@ fun HomeScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         BuddysEmptyState(
-                                            title = if (chatFilterChip == "ALL") "Welcome to Buddies" else "No chats in this filter",
-                                            subtitle = if (chatFilterChip == "ALL") "Find your buddies, share moments, and chat securely." else "Try choosing another filter tab or start a new chat.",
+                                            title = if (chatFilterChip == "ALL") "No messages yet" else "No chats in this filter",
+                                            subtitle = if (chatFilterChip == "ALL") "Start a conversation with your buddies." else "Try choosing another filter tab.",
                                             icon = Icons.AutoMirrored.Filled.Chat,
-                                            actionText = if (chatFilterChip != "ALL") "View all chats" else null,
-                                            onActionClick = { chatFilterChip = "ALL" }
+                                            actionText = if (chatFilterChip != "ALL") "View all chats" else "Start Chat",
+                                            onActionClick = {
+                                                if (chatFilterChip != "ALL") chatFilterChip = "ALL" else onOpenAddFriend()
+                                            }
                                         )
                                     }
                                 } else {
@@ -428,6 +742,15 @@ fun HomeScreen(
                                                 hasActiveStory = hasStory,
                                                 onClick = { openChatSafe(chat) },
                                                 onLongClick = { selectedChatForMenu = chat },
+                                                onAvatarLongClick = {
+                                                    if (isPinSet) {
+                                                        chatToUnlockWithPin = chat
+                                                        lockPinInput = ""
+                                                        lockPinError = null
+                                                    } else {
+                                                        performNavigation(chat)
+                                                    }
+                                                },
                                                 onCameraClick = onOpenCreateStory
                                             )
                                         }
@@ -435,7 +758,7 @@ fun HomeScreen(
                                 }
                             }
 
-                            // 6. 3D Floating Action Button (FAB) for New Chat
+                            // FAB for New Chat
                             ThreeDFloatingButton(
                                 onClick = onOpenAddFriend,
                                 icon = Icons.Default.Edit,
@@ -448,711 +771,22 @@ fun HomeScreen(
                     }
 
                     // ===================================================
-                    // TAB 2: UPDATES (24-HOUR STORIES & MOMENTS)
-                    // ===================================================
-                    HomeBottomTab.UPDATES -> {
-                        val otherStories = storyUiState.activeUserStories.filter { it.userId != currentUid }
-                        val myStories = storyUiState.activeUserStories.find { it.userId == currentUid }
-                        val hasMyStory = myStories != null && myStories.stories.isNotEmpty()
-
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(bottom = 80.dp)
-                            ) {
-                                // Top Header: Updates + Story Archive Action
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Updates",
-                                        style = MaterialTheme.typography.headlineMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = BuddysTheme.colors.textPrimary,
-                                            fontSize = 24.sp
-                                        )
-                                    )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        IconButton(
-                                            onClick = onOpenStoryArchive,
-                                            modifier = Modifier
-                                                .size(38.dp)
-                                                .clip(CircleShape)
-                                                .background(BuddysTheme.colors.surfaceSecondary)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.History,
-                                                contentDescription = "Story Archive",
-                                                tint = BuddysTheme.colors.textPrimary,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                        IconButton(
-                                            onClick = onOpenCreateStory,
-                                            modifier = Modifier
-                                                .size(38.dp)
-                                                .clip(CircleShape)
-                                                .background(BuddysTheme.colors.primaryRed)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.AddPhotoAlternate,
-                                                contentDescription = "Create Story",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
-                                val availableUpdate by updateManager.availableUpdate.collectAsState()
-
-                                if (availableUpdate != null) {
-                                    UpdateAvailableBanner(
-                                        manifest = availableUpdate!!,
-                                        onUpdateClick = { updateManager.requestUpdatePrompt(it) },
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                                    )
-                                }
-
-                                // "Status / My Story" Section
-                                Text(
-                                    text = "Status",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = BuddysTheme.colors.textPrimary,
-                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                                )
-
-                                Surface(
-                                    color = BuddysTheme.colors.surface,
-                                    shape = RoundedCornerShape(14.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                                        .clickable {
-                                            if (hasMyStory) onOpenStoryViewer(currentUid)
-                                            else onOpenCreateStory()
-                                        }
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(14.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(54.dp)
-                                                .then(
-                                                    if (hasMyStory) Modifier.border(2.5.dp, StoryRingGradient, CircleShape).padding(2.5.dp)
-                                                    else Modifier
-                                                ),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            AvatarView(
-                                                imageUrl = currentUser?.avatarUrl,
-                                                displayName = currentUser?.displayName ?: "Me",
-                                                size = 50.dp
-                                            )
-                                            if (!hasMyStory) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .align(Alignment.BottomEnd)
-                                                        .size(20.dp)
-                                                        .clip(CircleShape)
-                                                        .background(BuddysTheme.colors.primaryRed)
-                                                        .border(1.5.dp, BuddysTheme.colors.surface, CircleShape),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Add,
-                                                        contentDescription = "Add",
-                                                        tint = Color.White,
-                                                        modifier = Modifier.size(13.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.width(14.dp))
-
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "My Status",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp,
-                                                color = BuddysTheme.colors.textPrimary
-                                            )
-                                            Text(
-                                                text = if (hasMyStory) "Tap to view status updates" else "Tap to add status update",
-                                                fontSize = 12.5.sp,
-                                                color = BuddysTheme.colors.textSecondary
-                                            )
-                                        }
-
-                                        IconButton(onClick = onOpenCreateStory) {
-                                            Icon(
-                                                imageVector = Icons.Default.CameraAlt,
-                                                contentDescription = "Camera",
-                                                tint = BuddysTheme.colors.primaryRed,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(18.dp))
-
-                                // Recent Updates from Buddies
-                                Text(
-                                    text = "Recent Updates",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = BuddysTheme.colors.textPrimary,
-                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                                )
-
-                                if (otherStories.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(32.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        BuddysEmptyState(
-                                            title = "No recent updates",
-                                            subtitle = "When your buddies share 24-hour stories, they'll show up here.",
-                                            icon = Icons.Default.AutoAwesome
-                                        )
-                                    }
-                                } else {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        otherStories.forEach { userStory ->
-                                            val isCloseFriend = currentUser?.closeFriends?.contains(userStory.userId) == true
-                                            Surface(
-                                                color = BuddysTheme.colors.surface,
-                                                shape = RoundedCornerShape(14.dp),
-                                                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable { onOpenStoryViewer(userStory.userId) }
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(12.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(52.dp)
-                                                            .border(
-                                                                2.5.dp,
-                                                                if (isCloseFriend) Brush.linearGradient(listOf(Color(0xFF22A06B), Color(0xFF28B772)))
-                                                                else if (userStory.hasUnreadFor(currentUid)) StoryRingGradient
-                                                                else Brush.linearGradient(listOf(BuddysTheme.colors.border, BuddysTheme.colors.border)),
-                                                                CircleShape
-                                                            )
-                                                            .padding(2.5.dp),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        AvatarView(
-                                                            imageUrl = userStory.userAvatarUrl,
-                                                            displayName = userStory.userDisplayName,
-                                                            size = 46.dp
-                                                        )
-                                                    }
-
-                                                    Spacer(modifier = Modifier.width(14.dp))
-
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Text(
-                                                                text = userStory.userDisplayName.ifBlank { userStory.username },
-                                                                fontWeight = FontWeight.Bold,
-                                                                fontSize = 15.sp,
-                                                                color = BuddysTheme.colors.textPrimary
-                                                            )
-                                                            if (isCloseFriend) {
-                                                                Spacer(modifier = Modifier.width(4.dp))
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Stars,
-                                                                    contentDescription = "Close Friend",
-                                                                    tint = Color(0xFF22A06B),
-                                                                    modifier = Modifier.size(14.dp)
-                                                                )
-                                                            }
-                                                        }
-                                                        Text(
-                                                            text = "${userStory.stories.size} ${if (userStory.stories.size == 1) "story" else "stories"} · Active 24h",
-                                                            fontSize = 12.5.sp,
-                                                            color = BuddysTheme.colors.textSecondary
-                                                        )
-                                                    }
-
-                                                    Icon(
-                                                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                                        contentDescription = null,
-                                                        tint = BuddysTheme.colors.textMuted,
-                                                        modifier = Modifier.size(14.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // 3D Camera Floating Action Button
-                            ThreeDFloatingButton(
-                                onClick = onOpenCreateStory,
-                                icon = Icons.Default.CameraAlt,
-                                contentDescription = "Post Story",
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(end = 20.dp, bottom = 20.dp)
-                            )
-                        }
-                    }
-
-                    // ===================================================
-                    // TAB 3: CALLS (VOICE & VIDEO CALL CENTER)
-                    // ===================================================
-                    HomeBottomTab.CALLS -> {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                // Top Header: Calls
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Calls",
-                                        style = MaterialTheme.typography.headlineMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = BuddysTheme.colors.textPrimary,
-                                            fontSize = 24.sp
-                                        )
-                                    )
-                                    IconButton(
-                                        onClick = onOpenAddFriend,
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(BuddysTheme.colors.surfaceSecondary)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.PersonAdd,
-                                            contentDescription = "Call a Buddy",
-                                            tint = BuddysTheme.colors.textPrimary,
-                                            modifier = Modifier.size(19.dp)
-                                        )
-                                    }
-                                }
-
-                                if (uiState.callHistory.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        BuddysEmptyState(
-                                            title = "No call history",
-                                            subtitle = "Start secure audio and video calls with your buddies.",
-                                            icon = Icons.Default.Phone,
-                                            actionText = "Find buddies",
-                                            onActionClick = onOpenAddFriend
-                                        )
-                                    }
-                                } else {
-                                    LazyColumn(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f),
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(uiState.callHistory, key = { it.callId }) { call ->
-                                            val isOutgoing = call.callerUid == currentUid
-                                            val otherUid = if (isOutgoing) call.receiverUid else call.callerUid
-                                            val otherName = if (isOutgoing) call.receiverName else call.callerName
-                                            val otherAvatar = if (isOutgoing) call.receiverAvatarUrl else call.callerAvatarUrl
-                                            val isMissed = call.status == "MISSED" || (call.status == "REJECTED" && !isOutgoing)
-
-                                            Surface(
-                                                color = BuddysTheme.colors.surface,
-                                                shape = RoundedCornerShape(14.dp),
-                                                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(12.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    AvatarView(
-                                                        imageUrl = otherAvatar,
-                                                        displayName = otherName.ifBlank { "Buddy" },
-                                                        size = 46.dp
-                                                    )
-                                                    Spacer(modifier = Modifier.width(12.dp))
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Text(
-                                                            text = otherName.ifBlank { "Buddy" },
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = if (isMissed) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textPrimary,
-                                                            fontSize = 15.sp
-                                                        )
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(
-                                                                imageVector = if (call.isVideo) Icons.Default.Videocam else Icons.Default.Phone,
-                                                                contentDescription = null,
-                                                                tint = if (isMissed) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary,
-                                                                modifier = Modifier.size(13.dp)
-                                                            )
-                                                            Spacer(modifier = Modifier.width(4.dp))
-                                                            Text(
-                                                                text = if (isMissed) "Missed" else if (isOutgoing) "Outgoing" else "Incoming",
-                                                                color = if (isMissed) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary,
-                                                                fontSize = 12.5.sp
-                                                            )
-                                                            Text(
-                                                                text = " · ${call.createdAt?.let { ChatUtils.formatTimestamp(it) } ?: "Recent"}",
-                                                                color = BuddysTheme.colors.textMuted,
-                                                                fontSize = 12.5.sp
-                                                            )
-                                                        }
-                                                    }
-
-                                                    IconButton(
-                                                        onClick = {
-                                                            onOpenCall(otherUid, otherName, call.isVideo)
-                                                        },
-                                                        modifier = Modifier
-                                                            .size(38.dp)
-                                                            .clip(CircleShape)
-                                                            .background(BuddysTheme.colors.surfaceSecondary)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = if (call.isVideo) Icons.Default.Videocam else Icons.Default.Phone,
-                                                            contentDescription = "Call Back",
-                                                            tint = BuddysTheme.colors.primaryRed,
-                                                            modifier = Modifier.size(18.dp)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // ===================================================
-                    // TAB 4: PROFILE / YOU (ACCOUNT & SETTINGS HUB)
+                    // TAB 5: PROFILE / YOU (INSTAGRAM-STYLE PROFILE)
                     // ===================================================
                     HomeBottomTab.PROFILE -> {
                         val profileUser = profileUiState.user ?: currentUser
 
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(bottom = 80.dp)
-                        ) {
-                            // Top Bar: You
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "You",
-                                    style = MaterialTheme.typography.headlineMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = BuddysTheme.colors.textPrimary,
-                                        fontSize = 24.sp
-                                    )
-                                )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    IconButton(
-                                        onClick = { profileUser?.let { onOpenPublicProfile(it.uid) } },
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(BuddysTheme.colors.surfaceSecondary)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.QrCode,
-                                            contentDescription = "QR Code",
-                                            tint = BuddysTheme.colors.textPrimary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = onOpenEditProfile,
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(BuddysTheme.colors.surfaceSecondary)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit Profile",
-                                            tint = BuddysTheme.colors.textPrimary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = onOpenPrivacySettings,
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(BuddysTheme.colors.surfaceSecondary)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Settings,
-                                            contentDescription = "Settings",
-                                            tint = BuddysTheme.colors.textPrimary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
-                            val availableUpdate by updateManager.availableUpdate.collectAsState()
-
-                            if (availableUpdate != null) {
-                                UpdateAvailableBanner(
-                                    manifest = availableUpdate!!,
-                                    onUpdateClick = { updateManager.requestUpdatePrompt(it) },
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                                )
-                            }
-
-                            // Profile Hero Card
-                            Surface(
-                                color = BuddysTheme.colors.surface,
-                                shape = RoundedCornerShape(20.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(20.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Box(contentAlignment = Alignment.BottomEnd) {
-                                        AvatarView(
-                                            imageUrl = profileUser?.avatarUrl,
-                                            displayName = profileUser?.displayName ?: "User",
-                                            size = 80.dp,
-                                            isOnline = true
-                                        )
-                                        Box(
-                                            modifier = Modifier
-                                                .size(26.dp)
-                                                .clip(CircleShape)
-                                                .background(BuddysTheme.colors.primaryRed)
-                                                .clickable { profileViewModel.openPhotoOptions() }
-                                                .border(2.dp, BuddysTheme.colors.surface, CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.CameraAlt,
-                                                contentDescription = "Change Photo",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    Text(
-                                        text = profileUser?.displayName ?: "Buddies User",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp,
-                                        color = BuddysTheme.colors.textPrimary
-                                    )
-
-                                    if (!profileUser?.username.isNullOrBlank()) {
-                                        Text(
-                                            text = "@${profileUser?.username}",
-                                            fontSize = 13.5.sp,
-                                            color = BuddysTheme.colors.primaryRed,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-
-                                    if (!profileUser?.bio.isNullOrBlank()) {
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = profileUser?.bio ?: "",
-                                            fontSize = 13.sp,
-                                            color = BuddysTheme.colors.textSecondary,
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    // Follower / Following Stats
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceEvenly
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            modifier = Modifier.clickable { profileUser?.let { onOpenFollowers(it.uid) } }
-                                        ) {
-                                            Text(
-                                                text = "${profileUser?.followerCount ?: 0}",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 16.sp,
-                                                color = BuddysTheme.colors.textPrimary
-                                            )
-                                            Text(
-                                                text = "Followers",
-                                                fontSize = 12.sp,
-                                                color = BuddysTheme.colors.textSecondary
-                                            )
-                                        }
-                                        Box(
-                                            modifier = Modifier
-                                                .width(1.dp)
-                                                .height(30.dp)
-                                                .background(BuddysTheme.colors.divider)
-                                        )
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            modifier = Modifier.clickable { profileUser?.let { onOpenFollowing(it.uid) } }
-                                        ) {
-                                            Text(
-                                                text = "${profileUser?.followingCount ?: 0}",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 16.sp,
-                                                color = BuddysTheme.colors.textPrimary
-                                            )
-                                            Text(
-                                                text = "Following",
-                                                fontSize = 12.sp,
-                                                color = BuddysTheme.colors.textSecondary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Features & Hub List
-                            Text(
-                                text = "Features & Tools",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = BuddysTheme.colors.textPrimary,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                            )
-
-                            Surface(
-                                color = BuddysTheme.colors.surface,
-                                shape = RoundedCornerShape(18.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                    ProfileHubItem(
-                                        icon = Icons.Default.Bookmark,
-                                        iconTint = Color(0xFF0084FF),
-                                        title = "Saved Messages",
-                                        subtitle = "Personal cloud bookmarks & notes",
-                                        onClick = onOpenSavedMessages
-                                    )
-                                    HorizontalDivider(color = BuddysTheme.colors.divider.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
-                                    ProfileHubItem(
-                                        icon = Icons.Default.Stars,
-                                        iconTint = Color(0xFF22A06B),
-                                        title = "Close Friends",
-                                        subtitle = "Manage private story audience",
-                                        onClick = onOpenCloseFriends
-                                    )
-                                    HorizontalDivider(color = BuddysTheme.colors.divider.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
-                                    ProfileHubItem(
-                                        icon = Icons.Default.History,
-                                        iconTint = BuddysTheme.colors.primaryRed,
-                                        title = "Story Archive",
-                                        subtitle = "View your past 24h stories",
-                                        onClick = onOpenStoryArchive
-                                    )
-                                    HorizontalDivider(color = BuddysTheme.colors.divider.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
-                                    ProfileHubItem(
-                                        icon = Icons.Default.Settings,
-                                        iconTint = Color(0xFFEAA11A),
-                                        title = "Settings & Privacy",
-                                        subtitle = "Privacy PIN, Biometrics, App Lock & Hidden chats",
-                                        onClick = onOpenPrivacySettings
-                                    )
-                                    HorizontalDivider(color = BuddysTheme.colors.divider.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
-                                    ProfileHubItem(
-                                        icon = Icons.Default.Storage,
-                                        iconTint = Color(0xFFA855F7),
-                                        title = "Storage & Data",
-                                        subtitle = "Manage cache and media downloads",
-                                        onClick = onOpenStorageManager
-                                    )
-                                    HorizontalDivider(color = BuddysTheme.colors.divider.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
-                                    ProfileHubItem(
-                                        icon = Icons.Default.PersonAdd,
-                                        iconTint = BuddysTheme.colors.primaryRed,
-                                        title = "Pair Buddy Code",
-                                        subtitle = "Connect using 15-minute temporary codes",
-                                        onClick = onOpenAddFriend
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Account Section
-                            Surface(
-                                color = BuddysTheme.colors.surface,
-                                shape = RoundedCornerShape(18.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                    ProfileHubItem(
-                                        icon = Icons.AutoMirrored.Filled.ExitToApp,
-                                        iconTint = BuddysTheme.colors.error,
-                                        title = "Sign Out",
-                                        subtitle = "Log out from this device",
-                                        onClick = { profileViewModel.signOut() }
-                                    )
-                                }
-                            }
-                        }
+                        BuddysFullProfileView(
+                            user = profileUser,
+                            onBack = null,
+                            onOpenEditProfile = onOpenEditProfile,
+                            onOpenPrivacySettings = onOpenPrivacySettings,
+                            onOpenFollowers = { profileUser?.let { onOpenFollowers(it.uid) } },
+                            onOpenFollowing = { profileUser?.let { onOpenFollowing(it.uid) } },
+                            onOpenCreateStory = onOpenCreateStory,
+                            onPhotoOptionsClick = { profileViewModel.openPhotoOptions() },
+                            onSignOutClick = { profileViewModel.signOut() }
+                        )
 
                         if (profileUiState.showPhotoOptions) {
                             AlertDialog(
@@ -2110,6 +1744,7 @@ private fun PremiumChatRow(
     hasActiveStory: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    onAvatarLongClick: (() -> Unit)? = null,
     onCameraClick: () -> Unit = {}
 ) {
     val otherInfo = chat.getOtherParticipantInfo(currentUid)
@@ -2171,6 +1806,11 @@ private fun PremiumChatRow(
                 .then(
                     if (hasActiveStory) Modifier.border(2.dp, StoryRingGradient, CircleShape).padding(2.dp)
                     else Modifier
+                )
+                .clip(CircleShape)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = { onAvatarLongClick?.invoke() ?: onLongClick() }
                 ),
             contentAlignment = Alignment.Center
         ) {

@@ -61,7 +61,7 @@ fun BuddysSpiderEmblem(
 }
 
 /**
- * Top Branding Wordmark for BUDDYS with the abstract emblem.
+ * Top Branding Wordmark for Buddies with the abstract emblem.
  */
 @Composable
 fun BuddysBrandHeader(
@@ -74,16 +74,16 @@ fun BuddysBrandHeader(
         horizontalArrangement = Arrangement.Center
     ) {
         if (showEmblem) {
-            BuddysSpiderEmblem(size = 20.dp, tint = BuddysTheme.colors.primaryRed)
+            BuddysSpiderEmblem(size = 22.dp, tint = BuddysTheme.colors.primaryRed)
             Spacer(modifier = Modifier.width(8.dp))
         }
         Text(
-            text = "BUDDYS",
+            text = "Buddies",
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp,
+                letterSpacing = 0.5.sp,
                 color = BuddysTheme.colors.textPrimary,
-                fontSize = 20.sp
+                fontSize = 21.sp
             )
         )
     }

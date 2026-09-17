@@ -12,13 +12,13 @@ class UpdateFlowLogicTest {
     @Test
     fun updateManifest_serializationAndDeserialization() {
         val original = UpdateManifest(
-            latestVersion = "0.4.0",
-            versionCode = 4,
-            apkUrl = "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.0/app-universal-debug.apk",
+            latestVersion = "0.4.1",
+            versionCode = 5,
+            apkUrl = "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.1/app-universal-debug.apk",
             apkFileName = "app-universal-debug.apk",
-            fileSize = "65.2 MB",
-            releaseDate = "2026-09-16",
-            releaseNotes = listOf("Redesign", "Performance", "Bug fixes"),
+            fileSize = "68.5 MB",
+            releaseDate = "2026-09-17",
+            releaseNotes = listOf("Security overhaul", "PIN/Biometrics", "Following fixes"),
             isMandatory = false,
             minimumSupportedVersionCode = 1
         )
@@ -38,21 +38,21 @@ class UpdateFlowLogicTest {
     }
 
     @Test
-    fun versionComparison_upgradeFromV030toV040_triggersUpdate() {
-        val currentInstalledVersionCode = 3 // v0.3.0
-        val manifestVersionCode = 4 // v0.4.0
+    fun versionComparison_upgradeFromV040toV041_triggersUpdate() {
+        val currentInstalledVersionCode = 4 // v0.4.0
+        val manifestVersionCode = 5 // v0.4.1
 
         val hasUpdate = manifestVersionCode > currentInstalledVersionCode
-        assertTrue("v0.3.0 (code 3) must detect v0.4.0 (code 4) as an available update", hasUpdate)
+        assertTrue("v0.4.0 (code 4) must detect v0.4.1 (code 5) as an available update", hasUpdate)
     }
 
     @Test
-    fun versionComparison_v040onV040_doesNotTriggerUpdate() {
-        val currentInstalledVersionCode = 4 // v0.4.0
-        val manifestVersionCode = 4 // v0.4.0
+    fun versionComparison_v041onV041_doesNotTriggerUpdate() {
+        val currentInstalledVersionCode = 5 // v0.4.1
+        val manifestVersionCode = 5 // v0.4.1
 
         val hasUpdate = manifestVersionCode > currentInstalledVersionCode
-        assertFalse("v0.4.0 (code 4) must NOT trigger update when manifest is code 4", hasUpdate)
+        assertFalse("v0.4.1 (code 5) must NOT trigger update when manifest is code 5", hasUpdate)
     }
 
     @Test

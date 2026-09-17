@@ -42,62 +42,62 @@ data class BuddysColorScheme(
 }
 
 // --------------------------------------------------------------------
-// LIGHT THEME (Clean Snow + Slate + Iris Accent)
+// LIGHT THEME (Porcelain Light + Crisp Slate + Premium Rose Accent)
 // --------------------------------------------------------------------
 val LightBuddysColors = BuddysColorScheme(
     isDark = false,
-    background = Color(0xFFF8FAFC),
+    background = Color(0xFFFAFAFC),
     surface = Color(0xFFFFFFFF),
-    surfaceSecondary = Color(0xFFF1F5F9),
-    surfaceElevated = Color(0xFFE2E8F0),
+    surfaceSecondary = Color(0xFFF1F3F6),
+    surfaceElevated = Color(0xFFE5E7EB),
     surfaceComposer = Color(0xFFFFFFFF),
     textPrimary = Color(0xFF0F172A),
     textSecondary = Color(0xFF475569),
     textMuted = Color(0xFF94A3B8),
     border = Color(0xFFE2E8F0),
     divider = Color(0xFFF1F5F9),
-    primaryAccent = Color(0xFF4F46E5),
-    deepAccent = Color(0xFF3730A3),
-    softAccent = Color(0xFFEEF2FF),
+    primaryAccent = Color(0xFFE11D48),
+    deepAccent = Color(0xFFBE123C),
+    softAccent = Color(0xFFFFF1F2),
     secondaryAccent = Color(0xFF0284C7),
     success = Color(0xFF10B981),
     warning = Color(0xFFF59E0B),
     error = Color(0xFFEF4444),
-    bubbleOutgoing = Color(0xFF4F46E5),
-    bubbleIncoming = Color(0xFFF1F5F9),
+    bubbleOutgoing = Color(0xFFE11D48),
+    bubbleIncoming = Color(0xFFF1F3F6),
     textOnPrimary = Color(0xFFFFFFFF),
     webGeometryTint = Color.Transparent
 )
 
 // --------------------------------------------------------------------
-// DARK THEME (Obsidian OLED + Satin Charcoal + Iris Violet)
+// DARK THEME (Obsidian OLED + Sleek Satin + Refined Rose Accent)
 // --------------------------------------------------------------------
 val DarkBuddysColors = BuddysColorScheme(
     isDark = true,
-    background = Color(0xFF08090C),
-    surface = Color(0xFF111318),
-    surfaceSecondary = Color(0xFF181B22),
-    surfaceElevated = Color(0xFF1F232D),
-    surfaceComposer = Color(0xFF161920),
+    background = Color(0xFF090A0E),
+    surface = Color(0xFF12141B),
+    surfaceSecondary = Color(0xFF1A1D27),
+    surfaceElevated = Color(0xFF222634),
+    surfaceComposer = Color(0xFF151822),
     textPrimary = Color(0xFFF8FAFC),
     textSecondary = Color(0xFF94A3B8),
     textMuted = Color(0xFF64748B),
-    border = Color(0xFF1E2330),
-    divider = Color(0xFF1E2330),
-    primaryAccent = Color(0xFF6366F1),
-    deepAccent = Color(0xFF4F46E5),
-    softAccent = Color(0xFF1E1E38),
+    border = Color(0xFF232838),
+    divider = Color(0xFF1E2332),
+    primaryAccent = Color(0xFFF43F5E),
+    deepAccent = Color(0xFFE11D48),
+    softAccent = Color(0xFF2E1520),
     secondaryAccent = Color(0xFF38BDF8),
     success = Color(0xFF10B981),
     warning = Color(0xFFFBBF24),
     error = Color(0xFFF87171),
-    bubbleOutgoing = Color(0xFF6366F1),
-    bubbleIncoming = Color(0xFF181B22),
+    bubbleOutgoing = Color(0xFFE11D48),
+    bubbleIncoming = Color(0xFF1A1D27),
     textOnPrimary = Color(0xFFFFFFFF),
     webGeometryTint = Color.Transparent
 )
 
-val LocalBuddysColors = staticCompositionLocalOf { LightBuddysColors }
+val LocalBuddysColors = staticCompositionLocalOf { DarkBuddysColors }
 
 object BuddysTheme {
     val colors: BuddysColorScheme
@@ -109,11 +109,11 @@ object BuddysTheme {
 // --------------------------------------------------------------------
 // BACKWARD COMPATIBLE CONSTANTS / DYNAMIC GETTERS
 // --------------------------------------------------------------------
-val BuddysRed = Color(0xFF6366F1)
-val BuddysDeepRed = Color(0xFF4F46E5)
+val BuddysRed = Color(0xFFE11D48)
+val BuddysDeepRed = Color(0xFFBE123C)
 val BuddysDarkBlue = Color(0xFF0F172A)
 val BuddysWhite = Color(0xFFFFFFFF)
-val BuddysBlack = Color(0xFF08090C)
+val BuddysBlack = Color(0xFF090A0E)
 
 val BackgroundCream: Color @Composable get() = BuddysTheme.colors.background
 val PaperWhite: Color @Composable get() = BuddysTheme.colors.surface
@@ -135,24 +135,24 @@ val PastelSkyBorder: Color @Composable get() = BuddysTheme.colors.border
 
 val BuddysRedGradient: Brush
     get() = Brush.linearGradient(
-        listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+        listOf(Color(0xFFF43F5E), Color(0xFFE11D48))
     )
 
 val StoryRingGradient: Brush
     get() = Brush.sweepGradient(
         listOf(
             Color(0xFFF43F5E),
-            Color(0xFFEC4899),
-            Color(0xFF8B5CF6),
-            Color(0xFF6366F1),
+            Color(0xFFFB7185),
+            Color(0xFFE11D48),
+            Color(0xFFBE123C),
             Color(0xFFF43F5E)
         )
     )
 
 val SnapMediaColor: Color = Color(0xFFF43F5E)
-val SnapChatColor: Color = Color(0xFF6366F1)
-val SnapVoiceColor: Color = Color(0xFF8B5CF6)
+val SnapChatColor: Color = Color(0xFFE11D48)
+val SnapVoiceColor: Color = Color(0xFF0284C7)
 val SeenReceiptBlue: Color = Color(0xFF38BDF8)
 
 val GlassCardBorder: Color
-    @Composable get() = if (BuddysTheme.colors.isDark) Color(0xFF1E2330) else Color(0xFFE2E8F0)
+    @Composable get() = if (BuddysTheme.colors.isDark) Color(0xFF232838) else Color(0xFFE2E8F0)

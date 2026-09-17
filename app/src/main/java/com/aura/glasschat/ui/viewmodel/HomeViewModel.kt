@@ -189,8 +189,8 @@ class HomeViewModel @JvmOverloads constructor(
 
     private fun filterChats(chats: List<Chat>, query: String): List<Chat> {
         val currentUid = authRepository.currentUserId
-        // Filter out hidden chats from main list
-        val visibleChats = chats.filter { !it.isHidden(currentUid) }
+        // Filter out hidden and locked chats from normal inbox list
+        val visibleChats = chats.filter { !it.isHidden(currentUid) && !it.isLocked(currentUid) }
 
         val filtered = if (query.isBlank()) {
             visibleChats

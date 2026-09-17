@@ -486,7 +486,7 @@ fun ThreeDTopBar(
 }
 
 /**
- * Premium 3D Bottom Navigation Bar with lifted destination pills and smooth springs.
+ * Premium 3D Bottom Navigation Bar with lifted destination pills and smooth springs (5-Tab Instagram + Snapchat navigation).
  */
 @Composable
 fun ThreeDBottomBar(
@@ -516,45 +516,53 @@ fun ThreeDBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(66.dp)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // TAB 1: CHATS
-            val isChats = selectedTab == HomeBottomTab.CHATS
+            // TAB 1: HOME (FEED & STORIES)
+            val isHome = selectedTab == HomeBottomTab.HOME
             ThreeDNavTabItem(
-                selected = isChats,
-                label = "Chats",
-                icon = Icons.AutoMirrored.Filled.Chat,
-                badgeCount = unreadChatsCount,
-                onClick = { onTabSelected(HomeBottomTab.CHATS) }
-            )
-
-            // TAB 2: UPDATES / STORIES
-            val isUpdates = selectedTab == HomeBottomTab.UPDATES
-            ThreeDNavTabItem(
-                selected = isUpdates,
-                label = "Updates",
-                icon = if (isUpdates) Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome,
+                selected = isHome,
+                label = "Home",
+                icon = if (isHome) Icons.Filled.Home else Icons.Outlined.Home,
                 showDotBadge = hasUnreadUpdates,
-                onClick = { onTabSelected(HomeBottomTab.UPDATES) }
+                onClick = { onTabSelected(HomeBottomTab.HOME) }
             )
 
-            // TAB 3: CALLS
-            val isCalls = selectedTab == HomeBottomTab.CALLS
+            // TAB 2: SEARCH / EXPLORE
+            val isSearch = selectedTab == HomeBottomTab.SEARCH
             ThreeDNavTabItem(
-                selected = isCalls,
-                label = "Calls",
-                icon = if (isCalls) Icons.Filled.Phone else Icons.Outlined.Phone,
-                badgeCount = missedCallsCount,
-                onClick = { onTabSelected(HomeBottomTab.CALLS) }
+                selected = isSearch,
+                label = "Search",
+                icon = if (isSearch) Icons.Filled.Search else Icons.Outlined.Search,
+                onClick = { onTabSelected(HomeBottomTab.SEARCH) }
             )
 
-            // TAB 4: YOU / PROFILE
+            // TAB 3: CREATE (STORY & MOMENT)
+            val isCreate = selectedTab == HomeBottomTab.CREATE
+            ThreeDNavTabItem(
+                selected = isCreate,
+                label = "Create",
+                icon = if (isCreate) Icons.Filled.AddCircle else Icons.Outlined.AddCircle,
+                onClick = { onTabSelected(HomeBottomTab.CREATE) }
+            )
+
+            // TAB 4: INBOX (DIRECT MESSAGES)
+            val isInbox = selectedTab == HomeBottomTab.INBOX
+            ThreeDNavTabItem(
+                selected = isInbox,
+                label = "Inbox",
+                icon = if (isInbox) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline,
+                badgeCount = unreadChatsCount,
+                onClick = { onTabSelected(HomeBottomTab.INBOX) }
+            )
+
+            // TAB 5: PROFILE
             val isProfile = selectedTab == HomeBottomTab.PROFILE
             ThreeDNavTabItem(
                 selected = isProfile,
-                label = "You",
+                label = "Profile",
                 icon = if (isProfile) Icons.Filled.Person else Icons.Outlined.Person,
                 avatarUrl = userAvatarUrl,
                 avatarName = userDisplayName,
