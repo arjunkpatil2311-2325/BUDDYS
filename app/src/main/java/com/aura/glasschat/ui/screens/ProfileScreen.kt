@@ -253,7 +253,7 @@ fun BuddysFullProfileView(
                     Spacer(modifier = Modifier.width(4.dp))
                 }
                 Text(
-                    text = user?.username?.ifBlank { "buddys_user" } ?: "buddys_user",
+                    text = user?.username?.ifBlank { user.displayName.ifBlank { "User" } } ?: "Profile",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = BuddysTheme.colors.textPrimary,

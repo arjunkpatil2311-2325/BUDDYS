@@ -74,7 +74,7 @@ fun AuthScreen(
                 val errorMsg = when (e.statusCode) {
                     12500 -> "Google Sign-In configuration error."
                     12501 -> "Google Sign-In cancelled."
-                    else -> "Google Sign-In failed (): "
+                    else -> "Google Sign-In failed (${e.statusCode}): ${e.localizedMessage ?: "Unknown error"}"
                 }
                 viewModel.onGoogleSignInError(errorMsg)
             }
@@ -304,6 +304,45 @@ fun AuthScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    // Forgot Password in Login Mode
+                    if (uiState.isLoginMode) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.sendPasswordReset() }
+                                .padding(vertical = 4.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Text(
+                                text = "Forgot password?",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = BuddysTheme.colors.primaryRed,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        }
+                    }
+
+                    // Info Banner
+                    if (uiState.infoMessage != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BuddysTheme.colors.primaryRed.copy(alpha = 0.12f))
+                                .padding(10.dp)
+                        ) {
+                            Text(
+                                text = uiState.infoMessage!!,
+                                style = MaterialTheme.typography.bodySmall.copy(color = BuddysTheme.colors.primaryRed),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
 
                     // Error Banner
                     if (uiState.errorMessage != null) {

@@ -194,6 +194,19 @@ class AuthRepository(
         }
     }
 
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            val cleanEmail = email.trim()
+            if (cleanEmail.isBlank() || !cleanEmail.contains("@") || !cleanEmail.contains(".")) {
+                throw IllegalArgumentException("Please enter a valid email address.")
+            }
+            auth.sendPasswordResetEmail(cleanEmail).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun signOut() {
         val uid = currentUserId
         if (uid.isNotEmpty()) {

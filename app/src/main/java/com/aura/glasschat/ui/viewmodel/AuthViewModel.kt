@@ -17,6 +17,7 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val isGoogleLoading: Boolean = false,
     val errorMessage: String? = null,
+    val infoMessage: String? = null,
     val isSuccess: Boolean = false
 )
 
@@ -47,7 +48,33 @@ class AuthViewModel(
     }
 
     fun onDisplayNameChanged(value: String) {
-        _uiState.value = _uiState.value.copy(displayName = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(displayName = value, errorMessage = null, infoMessage = null)
+    }
+
+    fun sendPasswordReset() {
+        val email = _uiState.value.email.trim()
+        if (email.isBlank() || !email.contains("@") || !email.contains(".")) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Please enter a valid email address to reset password.")
+            return
+        }
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, infoMessage = null)
+        viewModelScope.launch {
+            val result = authRepository.sendPasswordResetEmail(email)
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        infoMessage = "Password reset email sent to $email. Please check your inbox."
+                    )
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = error.localizedMessage ?: "Failed to send reset email. Please verify your email address."
+                    )
+                }
+            )
+        }
     }
 
     fun signInWithGoogle(idToken: String) {

@@ -351,7 +351,7 @@ fun HomeScreen(
                                         authorHandle = "buddies_app",
                                         authorAvatarUrl = null,
                                         timeAgo = "Just now",
-                                        caption = "Welcome to Buddies v0.4.1 ✨ Fast, private, and beautifully organized moments with your closest friends.",
+                                        caption = "Welcome to Buddies v0.4.2 ✨ Fast, private, and beautifully organized moments with your closest friends.",
                                         likeCount = if (likedMoments.contains("welcome_post")) 43 else 42,
                                         commentCount = 5,
                                         isLiked = likedMoments.contains("welcome_post"),

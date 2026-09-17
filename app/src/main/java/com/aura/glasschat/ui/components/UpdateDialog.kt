@@ -150,8 +150,8 @@ fun UpdateDialog(
                             is UpdateUiState.UpdateAvailable -> state.manifest.latestVersion
                             is UpdateUiState.Downloading -> state.manifest.latestVersion
                             is UpdateUiState.ReadyToInstall -> state.manifest.latestVersion
-                            is UpdateUiState.Error -> state.manifest?.latestVersion ?: "0.4.0"
-                            else -> "0.4.0"
+                            is UpdateUiState.Error -> state.manifest?.latestVersion ?: "New Version"
+                            else -> "New Version"
                         }
 
                         val fileSizeText = when (state) {

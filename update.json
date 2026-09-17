@@ -1,17 +1,18 @@
 {
-  "latestVersion": "0.4.1",
-  "versionCode": 5,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.1/app-universal-debug.apk",
+  "latestVersion": "0.4.2",
+  "versionCode": 6,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.2/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
-  "fileSize": "68.5 MB",
+  "fileSize": "68.6 MB",
   "releaseDate": "2026-09-17",
   "releaseNotes": [
-    "Improved private and hidden chat protection with biometric and PIN security",
-    "Gated hidden chat access via long-press authentication",
-    "Following and follower count reliability fixes",
-    "Navigation and route deduplication fixes",
-    "Authentication validation and privacy-safe notification enhancements",
-    "General stability fixes and UI cleanup"
+    "Username/profile fallback fix",
+    "Forgot password support",
+    "Update manager/version display fixes",
+    "Hidden Chat security improvements",
+    "Biometric/PIN protection improvements",
+    "Following/follower synchronization fixes",
+    "Navigation and stability fixes"
   ],
   "isMandatory": false,
   "minimumSupportedVersionCode": 1

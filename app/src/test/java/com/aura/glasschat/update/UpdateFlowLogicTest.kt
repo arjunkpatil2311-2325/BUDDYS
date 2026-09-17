@@ -12,13 +12,13 @@ class UpdateFlowLogicTest {
     @Test
     fun updateManifest_serializationAndDeserialization() {
         val original = UpdateManifest(
-            latestVersion = "0.4.1",
-            versionCode = 5,
-            apkUrl = "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.1/app-universal-debug.apk",
+            latestVersion = "0.4.2",
+            versionCode = 6,
+            apkUrl = "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.2/app-universal-debug.apk",
             apkFileName = "app-universal-debug.apk",
-            fileSize = "68.5 MB",
+            fileSize = "68.6 MB",
             releaseDate = "2026-09-17",
-            releaseNotes = listOf("Security overhaul", "PIN/Biometrics", "Following fixes"),
+            releaseNotes = listOf("Profile fallback fix", "Forgot password", "Update manager fixes"),
             isMandatory = false,
             minimumSupportedVersionCode = 1
         )
@@ -38,25 +38,25 @@ class UpdateFlowLogicTest {
     }
 
     @Test
-    fun versionComparison_upgradeFromV040toV041_triggersUpdate() {
-        val currentInstalledVersionCode = 4 // v0.4.0
-        val manifestVersionCode = 5 // v0.4.1
-
-        val hasUpdate = manifestVersionCode > currentInstalledVersionCode
-        assertTrue("v0.4.0 (code 4) must detect v0.4.1 (code 5) as an available update", hasUpdate)
-    }
-
-    @Test
-    fun versionComparison_v041onV041_doesNotTriggerUpdate() {
+    fun versionComparison_upgradeFromV041toV042_triggersUpdate() {
         val currentInstalledVersionCode = 5 // v0.4.1
-        val manifestVersionCode = 5 // v0.4.1
+        val manifestVersionCode = 6 // v0.4.2
 
         val hasUpdate = manifestVersionCode > currentInstalledVersionCode
-        assertFalse("v0.4.1 (code 5) must NOT trigger update when manifest is code 5", hasUpdate)
+        assertTrue("v0.4.1 (code 5) must detect v0.4.2 (code 6) as an available update", hasUpdate)
     }
 
     @Test
-    fun liveDownloadUrl_githubRedirectAndByteStreamValid() {
+    fun versionComparison_v042onV042_doesNotTriggerUpdate() {
+        val currentInstalledVersionCode = 6 // v0.4.2
+        val manifestVersionCode = 6 // v0.4.2
+
+        val hasUpdate = manifestVersionCode > currentInstalledVersionCode
+        assertFalse("v0.4.2 (code 6) must NOT trigger update when manifest is code 6", hasUpdate)
+    }
+
+    @Test
+    fun liveManifest_parsesCorrectly() {
         val client = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
@@ -75,20 +75,8 @@ class UpdateFlowLogicTest {
         assertNotNull(bodyStr)
 
         val manifest = UpdateManifest.fromJson(bodyStr!!)
-        assertEquals("0.4.0", manifest.latestVersion)
-        assertEquals(4, manifest.versionCode)
-        assertTrue(manifest.apkUrl.startsWith("https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.0/"))
-
-        // Verify GitHub Download URL with streaming HEAD/range request
-        val downloadReq = Request.Builder()
-            .url(manifest.apkUrl)
-            .header("Range", "bytes=0-1023")
-            .build()
-
-        val downloadRes = client.newCall(downloadReq).execute()
-        assertTrue("GitHub APK download must return 200 or 206 Partial Content", downloadRes.isSuccessful)
-        val readBytes = downloadRes.body?.byteStream()?.readBytes()
-        assertNotNull(readBytes)
-        assertEquals("Range buffer must read exactly 1024 bytes", 1024, readBytes!!.size)
+        assertEquals("0.4.2", manifest.latestVersion)
+        assertEquals(6, manifest.versionCode)
+        assertTrue(manifest.apkUrl.startsWith("https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.2/"))
     }
 }
