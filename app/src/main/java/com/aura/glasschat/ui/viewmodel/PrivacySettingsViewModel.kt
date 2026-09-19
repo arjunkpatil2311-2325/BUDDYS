@@ -70,4 +70,11 @@ class PrivacySettingsViewModel(
             followRepository.unblockUser(currentUid, blockedUid)
         }
     }
+
+    fun signOut() {
+        viewModelScope.launch {
+            authRepository.signOut()
+        }
+    }
 }
+

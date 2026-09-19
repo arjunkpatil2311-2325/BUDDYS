@@ -25,10 +25,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aura.glasschat.BuildConfig
+import com.aura.glasschat.data.model.SavedAccount
 import com.aura.glasschat.data.update.UpdateManifest
 import com.aura.glasschat.security.AppLockManager
 import com.aura.glasschat.security.BiometricAuthManager
 import com.aura.glasschat.security.LockTimeout
+import com.aura.glasschat.ui.components.AccountSwitcherSheet
 import com.aura.glasschat.ui.components.BuddysButton
 import com.aura.glasschat.ui.components.BuddysCard
 import com.aura.glasschat.ui.components.BuddysOutlinedButton
@@ -47,6 +49,7 @@ fun PrivacySettingsScreen(
     onOpenStoryArchive: () -> Unit = {},
     onOpenStorageManager: () -> Unit = {},
     onOpenHiddenChats: () -> Unit = {},
+    onLoggedOut: () -> Unit = {},
     viewModel: PrivacySettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -54,6 +57,12 @@ fun PrivacySettingsScreen(
     val updateManager = remember { com.aura.glasschat.data.update.UpdateManager.getInstance(context) }
     val availableUpdate by updateManager.availableUpdate.collectAsState()
     var isCheckingUpdates by remember { mutableStateOf(false) }
+
+    val accountManager = remember { com.aura.glasschat.data.repository.AccountManagerRepository.getInstance(context) }
+    val authRepository = remember { com.aura.glasschat.data.repository.AuthRepository() }
+    val currentUid = authRepository.currentUserId
+    val savedAccounts by accountManager.savedAccounts.collectAsState(initial = emptyList())
+    var showAccountSwitcherSheet by remember { mutableStateOf(false) }
 
     val uiState by viewModel.uiState.collectAsState()
     val themeMode by ThemePreferences.themeMode.collectAsState()
@@ -780,7 +789,116 @@ fun PrivacySettingsScreen(
                 }
 
                 // ==========================================
-                // 7. APP VERSION & UPDATES
+                // 7. ACCOUNTS & LOGINS
+                // ==========================================
+                item {
+                    Text(
+                        text = "ACCOUNTS & LOGINS",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = BuddysTheme.colors.primaryRed,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                    )
+
+                    BuddysCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Switch Account Row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { showAccountSwitcherSheet = true }
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SwitchAccount,
+                                        contentDescription = null,
+                                        tint = BuddysTheme.colors.primaryRed,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = "Switch Account",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = BuddysTheme.colors.textPrimary
+                                            )
+                                        )
+                                        Text(
+                                            text = "${savedAccounts.size} saved account${if (savedAccounts.size != 1) "s" else ""}",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = BuddysTheme.colors.textSecondary,
+                                                fontSize = 12.sp
+                                            )
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                    contentDescription = null,
+                                    tint = BuddysTheme.colors.textMuted,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+
+                            HorizontalDivider(color = BuddysTheme.colors.border.copy(alpha = 0.5f), thickness = 0.8.dp)
+
+                            // Add Account Row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable {
+                                        onLoggedOut()
+                                    }
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PersonAdd,
+                                        contentDescription = null,
+                                        tint = BuddysTheme.colors.primaryAccent,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "Add Buddies Account",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = BuddysTheme.colors.textPrimary
+                                        )
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                    contentDescription = null,
+                                    tint = BuddysTheme.colors.textMuted,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ==========================================
+                // 8. APP VERSION & UPDATES
                 // ==========================================
                 item {
                     Text(
@@ -915,6 +1033,39 @@ fun PrivacySettingsScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
+        }
+
+        if (showAccountSwitcherSheet) {
+            AccountSwitcherSheet(
+                savedAccounts = savedAccounts,
+                currentUid = currentUid,
+                onDismiss = { showAccountSwitcherSheet = false },
+                onSwitchAccount = { target ->
+                    showAccountSwitcherSheet = false
+                    coroutineScope.launch {
+                        val res = accountManager.switchAccount(target.uid, authRepository)
+                        if (res.isSuccess) {
+                            Toast.makeText(context, "Switched to @${target.username} ✨", Toast.LENGTH_SHORT).show()
+                            onBack()
+                        } else {
+                            Toast.makeText(context, "Could not switch: ${res.exceptionOrNull()?.localizedMessage}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                onAddAccount = {
+                    showAccountSwitcherSheet = false
+                    onLoggedOut()
+                },
+                onRemoveAccount = { target ->
+                    accountManager.removeAccount(target.uid)
+                    Toast.makeText(context, "Removed @${target.username}", Toast.LENGTH_SHORT).show()
+                },
+                onLogOutActiveAccount = {
+                    showAccountSwitcherSheet = false
+                    viewModel.signOut()
+                    onLoggedOut()
+                }
+            )
         }
     }
 }

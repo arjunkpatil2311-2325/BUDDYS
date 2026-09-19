@@ -53,6 +53,7 @@ class HomeViewModel @JvmOverloads constructor(
     fun refresh() {
         dataJobs.forEach { it.cancel() }
         dataJobs.clear()
+        _uiState.update { HomeUiState(isLoading = true, isOnline = it.isOnline) }
         loadData()
     }
 

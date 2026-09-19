@@ -46,6 +46,8 @@ class ProfileViewModel @JvmOverloads constructor(
     }
 
     fun refresh() {
+        profileJob?.cancel()
+        _uiState.update { ProfileUiState() }
         loadProfile()
     }
 

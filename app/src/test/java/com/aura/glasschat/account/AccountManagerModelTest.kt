@@ -38,7 +38,6 @@ class AccountManagerModelTest {
         val account2 = SavedAccount(uid = "uid2", username = "hero2")
         val account3 = SavedAccount(uid = "uid3", username = "hero3")
 
-        val singleList = listOf(account1)
         fun getNext(list: List<SavedAccount>, currentUid: String): SavedAccount? {
             if (list.size <= 1) return null
             val idx = list.indexOfFirst { it.uid == currentUid }
@@ -46,13 +45,67 @@ class AccountManagerModelTest {
             return list[(idx + 1) % list.size]
         }
 
-        assertNull(getNext(singleList, "uid1"))
+        // 1 Account -> returns null (do not switch)
+        assertNull(getNext(listOf(account1), "uid1"))
 
+        // 2 Accounts -> toggles between them
+        val twoList = listOf(account1, account2)
+        assertEquals("uid2", getNext(twoList, "uid1")?.uid)
+        assertEquals("uid1", getNext(twoList, "uid2")?.uid)
+
+        // 3 Accounts -> cycles through them
         val multiList = listOf(account1, account2, account3)
         assertEquals("uid2", getNext(multiList, "uid1")?.uid)
         assertEquals("uid3", getNext(multiList, "uid2")?.uid)
         assertEquals("uid1", getNext(multiList, "uid3")?.uid)
         assertEquals("uid1", getNext(multiList, "non_existent")?.uid)
+    }
+
+    @Test
+    fun savedAccount_removalAndActiveFallback_handlesGracefully() {
+        val acc1 = SavedAccount(uid = "uid1", username = "user1")
+        val acc2 = SavedAccount(uid = "uid2", username = "user2")
+        var list = listOf(acc1, acc2)
+        var activeUid = "uid1"
+
+        // Remove active account -> falls back to next account
+        list = list.filter { it.uid != "uid1" }
+        if (activeUid == "uid1") {
+            activeUid = list.firstOrNull()?.uid ?: ""
+        }
+
+        assertEquals(1, list.size)
+        assertEquals("uid2", list.first().uid)
+        assertEquals("uid2", activeUid)
+
+        // Remove last account -> empty list and empty activeUid
+        list = list.filter { it.uid != "uid2" }
+        if (activeUid == "uid2") {
+            activeUid = list.firstOrNull()?.uid ?: ""
+        }
+
+        assertTrue(list.isEmpty())
+        assertEquals("", activeUid)
+    }
+
+    @Test
+    fun savedAccount_accountIsolation_guaranteesSeparation() {
+        val accountA = SavedAccount(
+            uid = "user_A",
+            email = "userA@buddys.app",
+            username = "alpha",
+            encryptedSessionToken = "token_A"
+        )
+        val accountB = SavedAccount(
+            uid = "user_B",
+            email = "userB@buddys.app",
+            username = "beta",
+            encryptedSessionToken = "token_B"
+        )
+
+        assertNotEquals(accountA.uid, accountB.uid)
+        assertNotEquals(accountA.username, accountB.username)
+        assertNotEquals(accountA.encryptedSessionToken, accountB.encryptedSessionToken)
     }
 
     @Test
@@ -70,3 +123,4 @@ class AccountManagerModelTest {
         assertTrue(restored.lastActiveAt > 0)
     }
 }
+

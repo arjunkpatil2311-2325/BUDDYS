@@ -49,6 +49,8 @@ class StoryViewModel @JvmOverloads constructor(
     }
 
     fun refresh() {
+        observeJob?.cancel()
+        _uiState.update { StoryUiState() }
         loadStories()
     }
 

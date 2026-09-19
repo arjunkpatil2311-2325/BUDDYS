@@ -1,5 +1,6 @@
 package com.aura.glasschat.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,11 +10,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,11 +36,14 @@ fun AccountSwitcherSheet(
     onDismiss: () -> Unit,
     onSwitchAccount: (SavedAccount) -> Unit,
     onAddAccount: () -> Unit,
-    onRemoveAccount: (SavedAccount) -> Unit
+    onRemoveAccount: (SavedAccount) -> Unit,
+    onLogOutActiveAccount: (() -> Unit)? = null
 ) {
+    var accountToRemove by remember { mutableStateOf<SavedAccount?>(null) }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF14141C),
+        containerColor = BuddysTheme.colors.surface,
         scrimColor = Color.Black.copy(alpha = 0.65f),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
@@ -57,7 +61,7 @@ fun AccountSwitcherSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     BuddysSpiderEmblem(
-                        modifier = Modifier.size(24.dp),
+                        size = 24.dp,
                         tint = BuddysTheme.colors.primaryRed
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -65,18 +69,18 @@ fun AccountSwitcherSheet(
                         text = "Accounts",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = BuddysTheme.colors.textPrimary,
                             fontSize = 20.sp
                         )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color.White.copy(alpha = 0.15f)
+                        color = BuddysTheme.colors.surfaceSecondary
                     ) {
                         Text(
                             text = "${savedAccounts.size}",
-                            color = Color.White,
+                            color = BuddysTheme.colors.textPrimary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -86,9 +90,16 @@ fun AccountSwitcherSheet(
 
                 IconButton(
                     onClick = onDismiss,
-                    modifier = Modifier.size(36.dp).background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(BuddysTheme.colors.surfaceSecondary, CircleShape)
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = BuddysTheme.colors.textPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
 
@@ -104,10 +115,10 @@ fun AccountSwitcherSheet(
 
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = if (isActive) Color(0xFF1E1E2C) else Color(0xFF181822),
-                        border = androidx.compose.foundation.BorderStroke(
+                        color = if (isActive) BuddysTheme.colors.surfaceSecondary else BuddysTheme.colors.surface,
+                        border = BorderStroke(
                             1.dp,
-                            if (isActive) BuddysTheme.colors.primaryRed else Color.White.copy(alpha = 0.1f)
+                            if (isActive) BuddysTheme.colors.primaryRed else BuddysTheme.colors.border
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -141,14 +152,14 @@ fun AccountSwitcherSheet(
                                     Text(
                                         text = account.displayName.ifBlank { account.username },
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
+                                        color = BuddysTheme.colors.textPrimary,
                                         fontSize = 15.sp,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = "@${account.username}",
-                                        color = Color.White.copy(alpha = 0.55f),
+                                        color = BuddysTheme.colors.textSecondary,
                                         fontSize = 13.sp,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -174,13 +185,13 @@ fun AccountSwitcherSheet(
                                     }
                                 } else {
                                     IconButton(
-                                        onClick = { onRemoveAccount(account) },
+                                        onClick = { accountToRemove = account },
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.Delete,
                                             contentDescription = "Remove Account",
-                                            tint = Color.White.copy(alpha = 0.4f),
+                                            tint = BuddysTheme.colors.textMuted,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
@@ -195,7 +206,7 @@ fun AccountSwitcherSheet(
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = Color.Transparent,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                        border = BorderStroke(1.dp, BuddysTheme.colors.border),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onAddAccount() }
@@ -210,13 +221,13 @@ fun AccountSwitcherSheet(
                                 modifier = Modifier
                                     .size(44.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.1f)),
+                                    .background(BuddysTheme.colors.surfaceSecondary),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     Icons.Default.Add,
                                     contentDescription = "Add Account",
-                                    tint = Color.White,
+                                    tint = BuddysTheme.colors.primaryRed,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
@@ -226,9 +237,54 @@ fun AccountSwitcherSheet(
                             Text(
                                 text = "Add Buddies Account",
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White,
+                                color = BuddysTheme.colors.textPrimary,
                                 fontSize = 15.sp
                             )
+                        }
+                    }
+                }
+
+                // Optional Log Out Active Account
+                if (onLogOutActiveAccount != null) {
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(1.dp, BuddysTheme.colors.border.copy(alpha = 0.5f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onLogOutActiveAccount() }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(BuddysTheme.colors.error.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ExitToApp,
+                                        contentDescription = "Log Out",
+                                        tint = BuddysTheme.colors.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(14.dp))
+
+                                Text(
+                                    text = "Log Out Active Account",
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = BuddysTheme.colors.error,
+                                    fontSize = 14.5.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -237,4 +293,52 @@ fun AccountSwitcherSheet(
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
+
+    // Remove Account Confirmation Dialog
+    accountToRemove?.let { acc ->
+        AlertDialog(
+            onDismissRequest = { accountToRemove = null },
+            containerColor = BuddysTheme.colors.surface,
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Text(
+                    text = "Remove Account",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = BuddysTheme.colors.textPrimary
+                    )
+                )
+            },
+            text = {
+                Text(
+                    text = "Remove @${acc.username} from this device? Your messages and profile will not be deleted, but you will need your password to log back in.",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = BuddysTheme.colors.textSecondary
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val toDelete = acc
+                        accountToRemove = null
+                        onRemoveAccount(toDelete)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BuddysTheme.colors.error,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Remove", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { accountToRemove = null }) {
+                    Text("Cancel", color = BuddysTheme.colors.textSecondary)
+                }
+            }
+        )
+    }
 }
+
