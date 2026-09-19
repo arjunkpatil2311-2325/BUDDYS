@@ -74,6 +74,24 @@ data class NearbyPairingPayload(
             )
         }
 
+        fun encodeCompactEndpointName(uid: String, username: String, displayName: String): String {
+            val cleanUid = uid.trim()
+            val cleanUser = username.trim().take(15)
+            val cleanDisplay = displayName.trim().take(15).ifBlank { "Buddy" }
+            return "B1|$cleanUid|$cleanUser|$cleanDisplay"
+        }
+
+        fun decodeCompactEndpointName(endpointName: String): Triple<String, String, String>? {
+            if (!endpointName.startsWith("B1|")) return null
+            val parts = endpointName.split("|")
+            if (parts.size < 4) return null
+            val uid = parts[1].trim()
+            val username = parts[2].trim()
+            val displayName = parts[3].trim().ifBlank { "Buddy" }
+            if (uid.isBlank()) return null
+            return Triple(uid, username, displayName)
+        }
+
         fun fromJson(jsonStr: String): NearbyPairingPayload? {
             return try {
                 val json = JSONObject(jsonStr)

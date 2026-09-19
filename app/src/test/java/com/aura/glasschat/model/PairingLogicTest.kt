@@ -58,4 +58,34 @@ class PairingLogicTest {
         assertFalse(code.isExpired())
         assertFalse(code.isValid())
     }
+
+    @Test
+    fun nearbyPairingPayload_encodeAndDecodeCompactEndpointName_success() {
+        val uid = "LZD4vVHzCbP2gS96rJ0sjWxF5Wr2"
+        val username = "alice_qa"
+        val displayName = "Alice QA"
+
+        val encoded = com.aura.glasschat.data.nearby.NearbyPairingPayload.encodeCompactEndpointName(
+            uid = uid,
+            username = username,
+            displayName = displayName
+        )
+
+        assertTrue("Encoded endpoint name must start with B1|", encoded.startsWith("B1|"))
+        assertTrue("Encoded endpoint name must be <= 131 bytes for Nearby limit", encoded.toByteArray(Charsets.UTF_8).size <= 131)
+
+        val decoded = com.aura.glasschat.data.nearby.NearbyPairingPayload.decodeCompactEndpointName(encoded)
+        assertNotNull("Decoded result should not be null", decoded)
+        assertEquals(uid, decoded?.first)
+        assertEquals(username, decoded?.second)
+        assertEquals(displayName, decoded?.third)
+    }
+
+    @Test
+    fun nearbyPairingPayload_decodeCompactEndpointName_handlesInvalid() {
+        assertNull(com.aura.glasschat.data.nearby.NearbyPairingPayload.decodeCompactEndpointName("InvalidHeader"))
+        assertNull(com.aura.glasschat.data.nearby.NearbyPairingPayload.decodeCompactEndpointName("B1|"))
+        assertNull(com.aura.glasschat.data.nearby.NearbyPairingPayload.decodeCompactEndpointName(""))
+    }
 }
+

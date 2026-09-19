@@ -58,6 +58,10 @@ class TapToBuddyViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
+    companion object {
+        const val DISCOVERY_TIMEOUT_MS = 15_000L
+    }
+
     private val authRepository = AuthRepository()
     private val userRepository = UserRepository()
     private val pairingRepository = PairingRepository()
@@ -140,13 +144,16 @@ class TapToBuddyViewModel(
                     }
                     is NearbyEvent.Disconnected -> handleDisconnected(event.endpointId)
                     is NearbyEvent.Error -> {
-                        timeoutJob?.cancel()
-                        _uiState.update {
-                            it.copy(
-                                status = TapToBuddyStatus.ERROR,
-                                errorMessage = event.message,
-                                isTransferringMedia = false
-                            )
+                        // Do not abort search if discovery is still searching unless it's a fatal error
+                        if (_uiState.value.status != TapToBuddyStatus.SEARCHING) {
+                            timeoutJob?.cancel()
+                            _uiState.update {
+                                it.copy(
+                                    status = TapToBuddyStatus.ERROR,
+                                    errorMessage = event.message,
+                                    isTransferringMedia = false
+                                )
+                            }
                         }
                     }
                 }
@@ -157,6 +164,9 @@ class TapToBuddyViewModel(
     fun startNearbySearch() {
         val user = _uiState.value.currentUser ?: return
         val sessionId = UUID.randomUUID().toString()
+
+        // Cancel previous timeout immediately
+        timeoutJob?.cancel()
 
         _uiState.update {
             it.copy(
@@ -182,16 +192,16 @@ class TapToBuddyViewModel(
 
         nearbyManager.startNearbyPairing(offerPayload)
 
-        // 60-second search timeout
-        timeoutJob?.cancel()
+        // Strict 15-second discovery attempt window
         timeoutJob = viewModelScope.launch {
-            delay(60_000L)
-            if (_uiState.value.status == TapToBuddyStatus.SEARCHING) {
+            delay(DISCOVERY_TIMEOUT_MS)
+            val currentState = _uiState.value
+            if (currentState.status == TapToBuddyStatus.SEARCHING && currentState.activeSessionId == sessionId) {
                 nearbyManager.stopNearbyPairing()
                 _uiState.update {
                     it.copy(
                         status = TapToBuddyStatus.ERROR,
-                        errorMessage = "No nearby Buddies found. Make sure both phones have Tap to Buddy open and are close together."
+                        errorMessage = "Couldn't find anyone nearby. Make sure both phones have Tap to Buddy open and are close together."
                     )
                 }
             }
@@ -204,13 +214,20 @@ class TapToBuddyViewModel(
         // Reject self-pairing
         if (payload.senderUid == currentUser.uid) return
 
+        val currentStatus = _uiState.value.status
+        // Ignore stale callbacks if user already cancelled or session ended
+        if (currentStatus != TapToBuddyStatus.SEARCHING && currentStatus != TapToBuddyStatus.DEVICE_FOUND) {
+            return
+        }
+
+        // Cancel timeout coroutine immediately upon device discovery
         timeoutJob?.cancel()
 
         val peer = User(
             uid = payload.senderUid,
             displayName = payload.displayName,
             username = payload.username,
-            avatarUrl = payload.avatarUrl
+            avatarUrl = payload.avatarUrl ?: _uiState.value.peerUser?.avatarUrl
         )
 
         _uiState.update {
@@ -218,7 +235,7 @@ class TapToBuddyViewModel(
                 status = TapToBuddyStatus.DEVICE_FOUND,
                 peerUser = peer,
                 peerEndpointId = endpointId,
-                activeSessionId = payload.sessionId,
+                activeSessionId = payload.sessionId.ifBlank { it.activeSessionId },
                 errorMessage = null
             )
         }

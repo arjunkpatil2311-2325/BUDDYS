@@ -1,18 +1,15 @@
 {
-  "latestVersion": "0.4.2",
-  "versionCode": 6,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.2/app-universal-debug.apk",
+  "latestVersion": "0.4.3",
+  "versionCode": 7,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.3/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
   "fileSize": "68.6 MB",
-  "releaseDate": "2026-09-17",
+  "releaseDate": "2026-09-19",
   "releaseNotes": [
-    "Username/profile fallback fix",
-    "Forgot password support",
-    "Update manager/version display fixes",
-    "Hidden Chat security improvements",
-    "Biometric/PIN protection improvements",
-    "Following/follower synchronization fixes",
-    "Navigation and stability fixes"
+    "Much faster Tap to Buddy discovery",
+    "Reliable two-device pairing",
+    "False discovery timeout/error fix",
+    "Improved pairing stability"
   ],
   "isMandatory": false,
   "minimumSupportedVersionCode": 1
