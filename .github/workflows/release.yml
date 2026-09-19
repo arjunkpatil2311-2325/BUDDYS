@@ -75,8 +75,8 @@ jobs:
           BUILD_TOOLS_DIR=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)
           CERTS_OUTPUT=$("$BUILD_TOOLS_DIR/apksigner" verify --print-certs -v "$APK_PATH")
           echo "$CERTS_OUTPUT"
-          if ! echo "$CERTS_OUTPUT" | grep -iq "9c:8d:94:94:82:82:d8:65:55:89:bd:d5:af:12:d6:44:1d:1d:0c:fe"; then
-            echo "❌ APK signing certificate does NOT match master release key (9C:8D:94:94:82:82:D8:65:55:89:BD:D5:AF:12:D6:44:1D:1D:0C:FE)!"
+          if ! echo "$CERTS_OUTPUT" | tr -d ':' | grep -iq "9c8d94948282d8655589bdd5af12d6441d1d0cfe"; then
+            echo "❌ APK signing certificate does NOT match master release key (9c8d94948282d8655589bdd5af12d6441d1d0cfe)!"
             exit 1
           fi
           echo "✅ APK signed with verified master release key!"
