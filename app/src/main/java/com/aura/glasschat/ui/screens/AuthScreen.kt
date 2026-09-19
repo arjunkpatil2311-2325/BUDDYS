@@ -53,6 +53,12 @@ fun AuthScreen(
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
+            val authRepo = com.aura.glasschat.data.repository.AuthRepository()
+            val uid = authRepo.currentUserId
+            if (uid.isNotBlank() && uiState.password.isNotBlank()) {
+                com.aura.glasschat.data.repository.AccountManagerRepository.getInstance(context)
+                    .saveSessionSecret(uid, uiState.email.trim(), uiState.password)
+            }
             onAuthSuccess()
         }
     }

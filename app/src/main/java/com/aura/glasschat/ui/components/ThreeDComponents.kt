@@ -2,9 +2,11 @@ package com.aura.glasschat.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -497,6 +499,7 @@ fun ThreeDBottomBar(
     unreadChatsCount: Int = 0,
     hasUnreadUpdates: Boolean = false,
     missedCallsCount: Int = 0,
+    onProfileDoubleTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -566,12 +569,14 @@ fun ThreeDBottomBar(
                 icon = if (isProfile) Icons.Filled.Person else Icons.Outlined.Person,
                 avatarUrl = userAvatarUrl,
                 avatarName = userDisplayName,
+                onDoubleClick = onProfileDoubleTap,
                 onClick = { onTabSelected(HomeBottomTab.PROFILE) }
             )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ThreeDNavTabItem(
     selected: Boolean,
@@ -581,6 +586,7 @@ private fun ThreeDNavTabItem(
     avatarName: String? = null,
     badgeCount: Int = 0,
     showDotBadge: Boolean = false,
+    onDoubleClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val activeColor = BuddysTheme.colors.primaryRed
@@ -605,7 +611,10 @@ private fun ThreeDNavTabItem(
                         .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
                 } else Modifier
             )
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onDoubleClick = onDoubleClick
+            )
             .padding(horizontal = 14.dp, vertical = 5.dp)
     ) {
         Box(

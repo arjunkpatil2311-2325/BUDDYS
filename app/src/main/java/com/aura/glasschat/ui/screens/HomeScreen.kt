@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.launch
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -113,6 +114,26 @@ fun HomeScreen(
     var lockPinInput by remember { mutableStateOf("") }
     var lockPinError by remember { mutableStateOf<String?>(null) }
 
+    val coroutineScope = rememberCoroutineScope()
+    val accountManager = remember { com.aura.glasschat.data.repository.AccountManagerRepository.getInstance(context) }
+    val savedAccounts by accountManager.savedAccounts.collectAsState(initial = emptyList())
+    var showAccountSwitcherSheet by remember { mutableStateOf(false) }
+
+    fun handleSwitchAccount(target: com.aura.glasschat.data.model.SavedAccount) {
+        coroutineScope.launch {
+            showAccountSwitcherSheet = false
+            val res = accountManager.switchAccount(target.uid, authRepository)
+            if (res.isSuccess) {
+                Toast.makeText(context, "Switched to @${target.username} ✨", Toast.LENGTH_SHORT).show()
+                viewModel.refresh()
+                profileViewModel.refresh()
+                storyViewModel.refresh()
+            } else {
+                Toast.makeText(context, "Could not switch: ${res.exceptionOrNull()?.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     // Profile photo picker
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -173,7 +194,17 @@ fun HomeScreen(
                     userDisplayName = currentUser?.displayName ?: "Me",
                     unreadChatsCount = totalUnreadChats,
                     hasUnreadUpdates = hasUnreadUpdates,
-                    missedCallsCount = missedCallsCount
+                    missedCallsCount = missedCallsCount,
+                    onProfileDoubleTap = {
+                        coroutineScope.launch {
+                            val nextAcc = accountManager.getNextAccount(currentUid)
+                            if (nextAcc != null) {
+                                handleSwitchAccount(nextAcc)
+                            } else {
+                                showAccountSwitcherSheet = true
+                            }
+                        }
+                    }
                 )
             }
         ) { paddingValues ->
@@ -784,6 +815,7 @@ fun HomeScreen(
                             onOpenFollowers = { profileUser?.let { onOpenFollowers(it.uid) } },
                             onOpenFollowing = { profileUser?.let { onOpenFollowing(it.uid) } },
                             onOpenCreateStory = onOpenCreateStory,
+                            onOpenAccountSwitcher = { showAccountSwitcherSheet = true },
                             onPhotoOptionsClick = { profileViewModel.openPhotoOptions() },
                             onSignOutClick = { profileViewModel.signOut() }
                         )
@@ -848,6 +880,26 @@ fun HomeScreen(
                     }
                 )
             }
+        }
+
+        // ==========================================
+        // MULTI-ACCOUNT SWITCHER BOTTOM SHEET
+        // ==========================================
+        if (showAccountSwitcherSheet) {
+            AccountSwitcherSheet(
+                savedAccounts = savedAccounts,
+                currentUid = currentUid,
+                onDismiss = { showAccountSwitcherSheet = false },
+                onSwitchAccount = { target -> handleSwitchAccount(target) },
+                onAddAccount = {
+                    showAccountSwitcherSheet = false
+                    onLoggedOut()
+                },
+                onRemoveAccount = { target ->
+                    accountManager.removeAccount(target.uid)
+                    Toast.makeText(context, "Removed @${target.username}", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
 
 

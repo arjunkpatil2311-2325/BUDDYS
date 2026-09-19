@@ -43,9 +43,17 @@ class HomeViewModel @JvmOverloads constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val dataJobs = mutableListOf<kotlinx.coroutines.Job>()
+
     init {
         loadData()
         observeNetwork()
+    }
+
+    fun refresh() {
+        dataJobs.forEach { it.cancel() }
+        dataJobs.clear()
+        loadData()
     }
 
     private fun observeNetwork() {
@@ -61,21 +69,24 @@ class HomeViewModel @JvmOverloads constructor(
         if (currentUid.isEmpty()) return
 
         // 1. Observe User Profile
-        viewModelScope.launch {
+        dataJobs.add(viewModelScope.launch {
             userRepository.observeUserProfile(currentUid).collect { user ->
                 _uiState.update { it.copy(currentUser = user) }
+                if (user != null && user.uid.isNotBlank()) {
+                    com.aura.glasschat.data.repository.AccountManagerRepository.getInstance(getApplication()).saveAccount(user)
+                }
             }
-        }
+        })
 
         // 2. Observe Friends List
-        viewModelScope.launch {
+        dataJobs.add(viewModelScope.launch {
             userRepository.observeFriends(currentUid).collect { friends ->
                 _uiState.update { it.copy(friends = friends) }
             }
-        }
+        })
 
         // 3. Observe Real-time Chats
-        viewModelScope.launch {
+        dataJobs.add(viewModelScope.launch {
             chatRepository.observeUserChats(currentUid).collect { chats ->
                 val hiddenCount = chats.count { it.isHidden(currentUid) }
                 _uiState.update { state ->
@@ -94,21 +105,21 @@ class HomeViewModel @JvmOverloads constructor(
                     }
                 }
             }
-        }
+        })
 
         // 4. Observe Call History
-        viewModelScope.launch {
+        dataJobs.add(viewModelScope.launch {
             callRepository.observeCallHistory(currentUid).collect { calls ->
                 _uiState.update { it.copy(callHistory = calls) }
             }
-        }
+        })
 
         // 5. Observe Incoming Calls
-        viewModelScope.launch {
+        dataJobs.add(viewModelScope.launch {
             callRepository.observeIncomingCalls(currentUid).collect { incoming ->
                 _uiState.update { it.copy(incomingCall = incoming) }
             }
-        }
+        })
     }
 
     fun declineIncomingCall(session: CallSession) {

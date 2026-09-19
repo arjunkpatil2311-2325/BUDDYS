@@ -42,33 +42,48 @@ class StoryViewModel @JvmOverloads constructor(
 
     private var currentUser: User? = null
 
+    private var observeJob: kotlinx.coroutines.Job? = null
+
     init {
+        loadStories()
+    }
+
+    fun refresh() {
+        loadStories()
+    }
+
+    private fun loadStories() {
+        observeJob?.cancel()
         val uid = authRepository.currentUserId
         _uiState.update { it.copy(currentUserId = uid) }
         if (uid.isNotEmpty()) {
             viewModelScope.launch {
                 currentUser = userRepository.getUser(uid)
             }
-            observeStories(uid)
-        }
-    }
-
-    private fun observeStories(currentUid: String) {
-        viewModelScope.launch {
-            storyRepository.observeActiveStories(currentUid).collect { list ->
-                val myStory = list.find { it.userId == currentUid }
-                val others = list.filter { it.userId != currentUid }
-                _uiState.update { state ->
-                    state.copy(
-                        activeUserStories = list,
-                        myStories = myStory
-                    )
+            observeJob = viewModelScope.launch {
+                storyRepository.observeActiveStories(uid).collect { list ->
+                    val myStory = list.find { it.userId == uid }
+                    _uiState.update { state ->
+                        state.copy(
+                            activeUserStories = list,
+                            myStories = myStory
+                        )
+                    }
                 }
             }
         }
     }
 
-    fun uploadStory(context: Context, imageUri: Uri, caption: String, audience: String = "EVERYONE") {
+    fun uploadStory(
+        context: Context,
+        imageUri: Uri,
+        caption: String,
+        audience: String = "EVERYONE",
+        textOverlays: List<com.aura.glasschat.data.model.StoryTextOverlay> = emptyList(),
+        stickers: List<com.aura.glasschat.data.model.StoryStickerItem> = emptyList(),
+        filterName: String = "NORMAL",
+        drawingPathData: String? = null
+    ) {
         val uid = _uiState.value.currentUserId.ifBlank { authRepository.currentUserId }
         if (uid.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Please log in to post stories") }
@@ -90,7 +105,68 @@ class StoryViewModel @JvmOverloads constructor(
             }
             currentUser = user
 
-            val result = storyRepository.uploadStory(context, imageUri, caption, user, audience)
+            val result = storyRepository.uploadStory(
+                context = context,
+                imageUri = imageUri,
+                caption = caption,
+                user = user,
+                audience = audience,
+                textOverlays = textOverlays,
+                stickers = stickers,
+                filterName = filterName,
+                drawingPathData = drawingPathData
+            )
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isUploading = false, uploadSuccess = true) }
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isUploading = false, errorMessage = error.localizedMessage ?: "Failed to post story") }
+                }
+            )
+        }
+    }
+
+    fun uploadBakedStory(
+        imageBytes: ByteArray,
+        caption: String,
+        audience: String = "EVERYONE",
+        textOverlays: List<com.aura.glasschat.data.model.StoryTextOverlay> = emptyList(),
+        stickers: List<com.aura.glasschat.data.model.StoryStickerItem> = emptyList(),
+        filterName: String = "NORMAL",
+        drawingPathData: String? = null
+    ) {
+        val uid = _uiState.value.currentUserId.ifBlank { authRepository.currentUserId }
+        if (uid.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Please log in to post stories") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploading = true, errorMessage = null, uploadSuccess = false) }
+
+            val user = currentUser ?: userRepository.getUser(uid) ?: run {
+                val fbUser = authRepository.currentUser
+                User(
+                    uid = uid,
+                    email = fbUser?.email ?: "",
+                    displayName = fbUser?.displayName ?: "Buddy",
+                    username = fbUser?.displayName?.replace(" ", "")?.lowercase() ?: "buddy",
+                    avatarUrl = fbUser?.photoUrl?.toString()
+                )
+            }
+            currentUser = user
+
+            val result = storyRepository.uploadBakedStory(
+                imageBytes = imageBytes,
+                caption = caption,
+                user = user,
+                audience = audience,
+                textOverlays = textOverlays,
+                stickers = stickers,
+                filterName = filterName,
+                drawingPathData = drawingPathData
+            )
             result.fold(
                 onSuccess = {
                     _uiState.update { it.copy(isUploading = false, uploadSuccess = true) }
@@ -155,8 +231,18 @@ class StoryViewModel @JvmOverloads constructor(
     fun markCurrentAsViewed() {
         val story = _uiState.value.currentStory ?: return
         val currentUid = _uiState.value.currentUserId
+        if (currentUid.isBlank()) return
+
         viewModelScope.launch {
-            storyRepository.markStoryAsViewed(story.id, currentUid)
+            val user = currentUser ?: userRepository.getUser(currentUid)
+            val viewerEntry = com.aura.glasschat.data.model.StoryViewerEntry(
+                uid = currentUid,
+                username = user?.username ?: "",
+                displayName = user?.displayName ?: "Buddy",
+                avatarUrl = user?.avatarUrl,
+                viewedAt = com.google.firebase.Timestamp.now()
+            )
+            storyRepository.markStoryAsViewed(story.id, currentUid, viewerEntry)
         }
     }
 

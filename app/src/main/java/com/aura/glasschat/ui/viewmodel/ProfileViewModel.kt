@@ -39,10 +39,21 @@ class ProfileViewModel @JvmOverloads constructor(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    private var profileJob: kotlinx.coroutines.Job? = null
+
     init {
+        loadProfile()
+    }
+
+    fun refresh() {
+        loadProfile()
+    }
+
+    private fun loadProfile() {
+        profileJob?.cancel()
         val currentUid = authRepository.currentUserId
         if (currentUid.isNotEmpty()) {
-            viewModelScope.launch {
+            profileJob = viewModelScope.launch {
                 userRepository.observeUserProfile(currentUid).collect { user ->
                     _uiState.update {
                         it.copy(

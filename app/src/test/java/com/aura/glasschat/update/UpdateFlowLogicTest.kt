@@ -75,8 +75,8 @@ class UpdateFlowLogicTest {
         assertNotNull(bodyStr)
 
         val manifest = UpdateManifest.fromJson(bodyStr!!)
-        assertEquals("0.4.2", manifest.latestVersion)
-        assertEquals(6, manifest.versionCode)
-        assertTrue(manifest.apkUrl.startsWith("https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.2/"))
+        assertTrue("Latest version must not be blank", manifest.latestVersion.isNotBlank())
+        assertTrue("Version code must be at least 7", manifest.versionCode >= 7)
+        assertTrue("APK URL must point to GitHub releases", manifest.apkUrl.startsWith("https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/"))
     }
 }

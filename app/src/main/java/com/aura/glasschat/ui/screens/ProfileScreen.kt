@@ -49,13 +49,14 @@ import com.aura.glasschat.ui.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
-    onBack: () -> Unit,
-    onLoggedOut: () -> Unit,
+    onBack: (() -> Unit)? = null,
     onOpenEditProfile: () -> Unit = {},
     onOpenPrivacySettings: () -> Unit = {},
     onOpenFollowers: (userId: String) -> Unit = {},
     onOpenFollowing: (userId: String) -> Unit = {},
     onOpenCreateStory: () -> Unit = {},
+    onOpenAccountSwitcher: () -> Unit = {},
+    onLoggedOut: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -99,6 +100,7 @@ fun ProfileScreen(
                 onOpenFollowers = { user?.let { onOpenFollowers(it.uid) } },
                 onOpenFollowing = { user?.let { onOpenFollowing(it.uid) } },
                 onOpenCreateStory = onOpenCreateStory,
+                onOpenAccountSwitcher = onOpenAccountSwitcher,
                 onPhotoOptionsClick = { viewModel.openPhotoOptions() },
                 onSignOutClick = { viewModel.signOut() }
             )
@@ -184,6 +186,7 @@ fun BuddysFullProfileView(
     onOpenFollowers: () -> Unit,
     onOpenFollowing: () -> Unit,
     onOpenCreateStory: () -> Unit = {},
+    onOpenAccountSwitcher: (() -> Unit)? = null,
     onPhotoOptionsClick: () -> Unit,
     onSignOutClick: (() -> Unit)? = null
 ) {
@@ -241,6 +244,11 @@ fun BuddysFullProfileView(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
+                    .then(
+                        if (onOpenAccountSwitcher != null) {
+                            Modifier.clickable { onOpenAccountSwitcher() }
+                        } else Modifier
+                    )
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 if (user?.isPrivate == true) {

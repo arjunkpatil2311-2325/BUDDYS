@@ -33,14 +33,44 @@ class StoryRepository(
         imageUri: Uri,
         caption: String,
         user: User,
-        audience: String = "EVERYONE"
+        audience: String = "EVERYONE",
+        textOverlays: List<com.aura.glasschat.data.model.StoryTextOverlay> = emptyList(),
+        stickers: List<com.aura.glasschat.data.model.StoryStickerItem> = emptyList(),
+        filterName: String = "NORMAL",
+        drawingPathData: String? = null
     ): Result<Story> {
-        val storyId = UUID.randomUUID().toString()
         val compressResult = mediaRepository.compressImage(context, imageUri)
         val imageBytes = compressResult.getOrNull()
             ?: return Result.failure(compressResult.exceptionOrNull() ?: Exception("Failed to process story image"))
 
-        android.util.Log.d(TAG, "Starting story upload via MediaStorageRepository: id=$storyId, uid=${user.uid}, size=${imageBytes.size} bytes, audience=$audience")
+        return uploadBakedStory(
+            imageBytes = imageBytes,
+            caption = caption,
+            user = user,
+            audience = audience,
+            textOverlays = textOverlays,
+            stickers = stickers,
+            filterName = filterName,
+            drawingPathData = drawingPathData
+        )
+    }
+
+    /**
+     * Uploads a pre-baked / pre-compressed story image with overlays and audience.
+     */
+    suspend fun uploadBakedStory(
+        imageBytes: ByteArray,
+        caption: String,
+        user: User,
+        audience: String = "EVERYONE",
+        textOverlays: List<com.aura.glasschat.data.model.StoryTextOverlay> = emptyList(),
+        stickers: List<com.aura.glasschat.data.model.StoryStickerItem> = emptyList(),
+        filterName: String = "NORMAL",
+        drawingPathData: String? = null
+    ): Result<Story> {
+        val storyId = UUID.randomUUID().toString()
+
+        android.util.Log.d(TAG, "Starting story upload via MediaStorageRepository: id=$storyId, uid=${user.uid}, size=${imageBytes.size} bytes, audience=$audience, filter=$filterName")
 
         val uploadResult = mediaStorageRepository.uploadStoryMedia(
             storyId = storyId,
@@ -76,9 +106,14 @@ class StoryRepository(
                 createdAt = now,
                 expiresAt = expiresAt,
                 viewedBy = emptyList(),
+                textOverlays = textOverlays,
+                stickers = stickers,
+                filterName = filterName,
+                drawingPathData = drawingPathData,
                 audience = audience,
                 closeFriends = if (audience == "CLOSE_FRIENDS") user.closeFriends else emptyList(),
-                reactions = emptyMap()
+                reactions = emptyMap(),
+                viewerDetails = emptyMap()
             )
 
             firestore.collection(STORIES_COLLECTION)
@@ -86,10 +121,10 @@ class StoryRepository(
                 .set(story.toMap())
                 .await()
 
-            android.util.Log.d("BUDDYS_STORY", "Story document saved to Firestore: $storyId")
+            android.util.Log.d(TAG, "Story document saved to Firestore: $storyId")
             Result.success(story)
         } catch (e: Exception) {
-            android.util.Log.e("BUDDYS_STORY", "Failed to write story document to Firestore", e)
+            android.util.Log.e(TAG, "Failed to write story document to Firestore", e)
             val friendlyMsg = com.aura.glasschat.util.ChatUtils.getFriendlyFirestoreErrorMessage(e)
             Result.failure(Exception(friendlyMsg, e))
         }
@@ -128,6 +163,21 @@ class StoryRepository(
                         @Suppress("UNCHECKED_CAST")
                         val reactions = doc.get("reactions") as? Map<String, String> ?: emptyMap()
 
+                        @Suppress("UNCHECKED_CAST")
+                        val rawTextOverlays = doc.get("textOverlays") as? List<Map<String, Any?>> ?: emptyList()
+                        val textOverlays = rawTextOverlays.map { com.aura.glasschat.data.model.StoryTextOverlay.fromMap(it) }
+
+                        @Suppress("UNCHECKED_CAST")
+                        val rawStickers = doc.get("stickers") as? List<Map<String, Any?>> ?: emptyList()
+                        val stickers = rawStickers.map { com.aura.glasschat.data.model.StoryStickerItem.fromMap(it) }
+
+                        val filterName = doc.getString("filterName") ?: "NORMAL"
+                        val drawingPathData = doc.getString("drawingPathData")
+
+                        @Suppress("UNCHECKED_CAST")
+                        val rawViewerDetails = doc.get("viewerDetails") as? Map<String, Map<String, Any?>> ?: emptyMap()
+                        val viewerDetails = rawViewerDetails.mapValues { com.aura.glasschat.data.model.StoryViewerEntry.fromMap(it.value) }
+
                         val story = Story(
                             id = id,
                             userId = userId,
@@ -139,9 +189,14 @@ class StoryRepository(
                             createdAt = createdAt,
                             expiresAt = expiresAt,
                             viewedBy = viewedBy,
+                            textOverlays = textOverlays,
+                            stickers = stickers,
+                            filterName = filterName,
+                            drawingPathData = drawingPathData,
                             audience = audience,
                             closeFriends = closeFriends,
-                            reactions = reactions
+                            reactions = reactions,
+                            viewerDetails = viewerDetails
                         )
 
                         if (story.isVisibleTo(currentUid)) story else null
@@ -175,13 +230,18 @@ class StoryRepository(
     }
 
     /**
-     * Adds an emoji reaction to a story.
+     * Adds an emoji reaction to a story and updates viewer detail.
      */
     suspend fun addStoryReaction(storyId: String, userId: String, emoji: String): Result<Unit> {
         return try {
             firestore.collection(STORIES_COLLECTION)
                 .document(storyId)
-                .update("reactions.$userId", emoji)
+                .update(
+                    mapOf(
+                        "reactions.$userId" to emoji,
+                        "viewerDetails.$userId.reaction" to emoji
+                    )
+                )
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -225,6 +285,21 @@ class StoryRepository(
                         @Suppress("UNCHECKED_CAST")
                         val reactions = doc.get("reactions") as? Map<String, String> ?: emptyMap()
 
+                        @Suppress("UNCHECKED_CAST")
+                        val rawTextOverlays = doc.get("textOverlays") as? List<Map<String, Any?>> ?: emptyList()
+                        val textOverlays = rawTextOverlays.map { com.aura.glasschat.data.model.StoryTextOverlay.fromMap(it) }
+
+                        @Suppress("UNCHECKED_CAST")
+                        val rawStickers = doc.get("stickers") as? List<Map<String, Any?>> ?: emptyList()
+                        val stickers = rawStickers.map { com.aura.glasschat.data.model.StoryStickerItem.fromMap(it) }
+
+                        val filterName = doc.getString("filterName") ?: "NORMAL"
+                        val drawingPathData = doc.getString("drawingPathData")
+
+                        @Suppress("UNCHECKED_CAST")
+                        val rawViewerDetails = doc.get("viewerDetails") as? Map<String, Map<String, Any?>> ?: emptyMap()
+                        val viewerDetails = rawViewerDetails.mapValues { com.aura.glasschat.data.model.StoryViewerEntry.fromMap(it.value) }
+
                         Story(
                             id = id,
                             userId = userId,
@@ -236,9 +311,14 @@ class StoryRepository(
                             createdAt = createdAt,
                             expiresAt = expiresAt,
                             viewedBy = viewedBy,
+                            textOverlays = textOverlays,
+                            stickers = stickers,
+                            filterName = filterName,
+                            drawingPathData = drawingPathData,
                             audience = audience,
                             closeFriends = closeFriends,
-                            reactions = reactions
+                            reactions = reactions,
+                            viewerDetails = viewerDetails
                         )
                     } catch (_: Exception) {
                         null
@@ -251,14 +331,20 @@ class StoryRepository(
     }
 
     /**
-     * Marks a story as viewed by the current user.
+     * Marks a story as viewed by the current user and saves viewer details.
      */
-    suspend fun markStoryAsViewed(storyId: String, currentUid: String): Result<Unit> {
+    suspend fun markStoryAsViewed(storyId: String, currentUid: String, viewerEntry: com.aura.glasschat.data.model.StoryViewerEntry? = null): Result<Unit> {
         if (currentUid.isBlank()) return Result.success(Unit)
         return try {
+            val updates = mutableMapOf<String, Any>(
+                "viewedBy" to FieldValue.arrayUnion(currentUid)
+            )
+            if (viewerEntry != null) {
+                updates["viewerDetails.$currentUid"] = viewerEntry.toMap()
+            }
             firestore.collection(STORIES_COLLECTION)
                 .document(storyId)
-                .update("viewedBy", FieldValue.arrayUnion(currentUid))
+                .update(updates)
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {

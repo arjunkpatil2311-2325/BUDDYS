@@ -354,7 +354,7 @@ fun AppNavHost(
         }
 
         composable(Screen.CreateStory.route) {
-            CreateStoryScreen(
+            StoryStudioScreen(
                 onBack = { navController.popBackStack() },
                 onStoryPosted = { navController.popBackStack() }
             )

@@ -549,6 +549,7 @@ fun BuddysBottomNavigationBar(
     unreadChatsCount: Int = 0,
     hasUnreadUpdates: Boolean = false,
     missedCallsCount: Int = 0,
+    onProfileDoubleTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     ThreeDBottomBar(
@@ -559,6 +560,7 @@ fun BuddysBottomNavigationBar(
         unreadChatsCount = unreadChatsCount,
         hasUnreadUpdates = hasUnreadUpdates,
         missedCallsCount = missedCallsCount,
+        onProfileDoubleTap = onProfileDoubleTap,
         modifier = modifier
     )
 }
