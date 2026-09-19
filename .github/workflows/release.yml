@@ -47,10 +47,22 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Configure Stable Signing Keystore
+        run: |
+          mkdir -p ~/.android
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > ~/.android/debug.keystore
+            echo "✅ Successfully restored release keystore from GitHub secrets."
+          else
+            echo "❌ ERROR: RELEASE_KEYSTORE_BASE64 secret is not configured!"
+            exit 1
+          fi
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey
+
       - name: Build Universal APK
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Validate Universal APK Output
+      - name: Validate Universal APK Output and Certificate
         run: |
           APK_PATH="app/build/outputs/apk/debug/app-universal-debug.apk"
           if [ ! -f "$APK_PATH" ]; then
@@ -63,6 +75,9 @@ jobs:
             echo "❌ APK is suspiciously small ($SIZE bytes)"
             exit 1
           fi
+          echo "Verifying APK signing certificate..."
+          BUILD_TOOLS_DIR=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)
+          "$BUILD_TOOLS_DIR/apksigner" verify --print-certs -v "$APK_PATH"
 
       - name: Determine Release Tag and Name
         id: release_meta
