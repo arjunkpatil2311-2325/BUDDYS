@@ -6,10 +6,13 @@ import com.google.firebase.firestore.ServerTimestamp
 data class StoryTextOverlay(
     val id: String = java.util.UUID.randomUUID().toString(),
     val text: String = "",
-    val style: String = "CLASSIC", // CLASSIC, MODERN, NEON, TYPEWRITER, STRONG, COMIC
+    val style: String = "CLASSIC", // CLASSIC, MODERN, NEON, TYPEWRITER, STRONG, MINIMAL
     val color: Long = 0xFFFFFFFF,
     val backgroundColor: Long = 0x00000000,
-    val alignment: String = "CENTER",
+    val backgroundOpacity: Float = 1.0f,
+    val alignment: String = "CENTER", // LEFT, CENTER, RIGHT
+    val fontSize: Float = 28f,
+    val shadow: Boolean = false,
     val x: Float = 0.5f,
     val y: Float = 0.5f,
     val scale: Float = 1.0f,
@@ -21,7 +24,10 @@ data class StoryTextOverlay(
         "style" to style,
         "color" to color,
         "backgroundColor" to backgroundColor,
+        "backgroundOpacity" to backgroundOpacity,
         "alignment" to alignment,
+        "fontSize" to fontSize,
+        "shadow" to shadow,
         "x" to x,
         "y" to y,
         "scale" to scale,
@@ -36,7 +42,10 @@ data class StoryTextOverlay(
                 style = map["style"] as? String ?: "CLASSIC",
                 color = (map["color"] as? Number)?.toLong() ?: 0xFFFFFFFF,
                 backgroundColor = (map["backgroundColor"] as? Number)?.toLong() ?: 0x00000000,
+                backgroundOpacity = (map["backgroundOpacity"] as? Number)?.toFloat() ?: 1.0f,
                 alignment = map["alignment"] as? String ?: "CENTER",
+                fontSize = (map["fontSize"] as? Number)?.toFloat() ?: 28f,
+                shadow = map["shadow"] as? Boolean ?: false,
                 x = (map["x"] as? Number)?.toFloat() ?: 0.5f,
                 y = (map["y"] as? Number)?.toFloat() ?: 0.5f,
                 scale = (map["scale"] as? Number)?.toFloat() ?: 1.0f,
@@ -45,6 +54,18 @@ data class StoryTextOverlay(
         }
     }
 }
+
+data class StoryDraft(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val userId: String = "",
+    val imageUriString: String = "",
+    val caption: String = "",
+    val filterName: String = "NORMAL",
+    val textOverlays: List<StoryTextOverlay> = emptyList(),
+    val stickers: List<StoryStickerItem> = emptyList(),
+    val audience: String = "EVERYONE",
+    val updatedAt: Long = System.currentTimeMillis()
+)
 
 data class StoryStickerItem(
     val id: String = java.util.UUID.randomUUID().toString(),

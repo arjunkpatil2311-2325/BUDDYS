@@ -15,6 +15,7 @@ interface MediaStorageRepository {
     suspend fun deleteStoryMedia(storyId: String): Result<Unit>
     suspend fun deletePostMedia(postId: String): Result<Unit>
     suspend fun deleteProfilePicture(userId: String): Result<Unit>
+    suspend fun resolveMediaUrl(rawUrlOrPath: String, expiresInSeconds: Int = SupabaseConfig.STORY_SIGNED_URL_EXPIRY_SECONDS): String
 }
 
 class SupabaseMediaStorageRepository(
@@ -27,11 +28,78 @@ class SupabaseMediaStorageRepository(
         @Volatile
         private var instance: SupabaseMediaStorageRepository? = null
 
+        // In-memory cache for resolved signed URLs to avoid repeated network signing requests
+        // Key: cleanPath, Value: Pair(signedUrl, expiryTimestampMillis)
+        private val signedUrlCache = java.util.concurrent.ConcurrentHashMap<String, Pair<String, Long>>()
+
         fun getInstance(): SupabaseMediaStorageRepository {
             return instance ?: synchronized(this) {
                 instance ?: SupabaseMediaStorageRepository().also { instance = it }
             }
         }
+    }
+
+    /**
+     * Resolves a raw storage path or potentially expired signed URL into a fresh valid signed URL.
+     * Guarantees 100% compatibility for old story records, Highlights, and archived stories.
+     */
+    override suspend fun resolveMediaUrl(rawUrlOrPath: String, expiresInSeconds: Int): String {
+        if (rawUrlOrPath.isBlank()) return ""
+
+        // If it's a local URI or external non-Supabase URL, return as-is
+        if (rawUrlOrPath.startsWith("file:") || rawUrlOrPath.startsWith("content:")) {
+            return rawUrlOrPath
+        }
+
+        val cleanPath = extractStoragePath(rawUrlOrPath)
+        if (cleanPath.isBlank()) {
+            return rawUrlOrPath
+        }
+
+        val now = System.currentTimeMillis()
+        val cached = signedUrlCache[cleanPath]
+        if (cached != null && cached.second > now + 60_000L) {
+            return cached.first
+        }
+
+        val signResult = storageClient.createSignedUrl(cleanPath, expiresInSeconds)
+        return signResult.fold(
+            onSuccess = { freshSignedUrl ->
+                val expiryMillis = now + (expiresInSeconds * 1000L)
+                signedUrlCache[cleanPath] = Pair(freshSignedUrl, expiryMillis)
+                freshSignedUrl
+            },
+            onFailure = { error ->
+                Log.w(TAG, "Failed to resolve fresh signed URL for path '$cleanPath': ${error.message}")
+                rawUrlOrPath
+            }
+        )
+    }
+
+    private fun extractStoragePath(raw: String): String {
+        val trimmed = raw.trim()
+        val bucket = SupabaseConfig.bucketName
+
+        // Case 1: Full Supabase URL e.g. .../object/sign/buddys-media/stories/123/img.jpg?token=...
+        val bucketIndex = trimmed.indexOf("$bucket/")
+        if (bucketIndex != -1) {
+            val afterBucket = trimmed.substring(bucketIndex + bucket.length + 1)
+            val queryIndex = afterBucket.indexOf('?')
+            return if (queryIndex != -1) afterBucket.substring(0, queryIndex) else afterBucket
+        }
+
+        // Case 2: Direct relative storage path e.g. stories/123/img.jpg or profile_pictures/abc/profile.jpg
+        val knownPrefixes = listOf("stories/", "posts/", "profile_pictures/", "chat_media/", "voice_messages/")
+        for (prefix in knownPrefixes) {
+            val prefixIndex = trimmed.indexOf(prefix)
+            if (prefixIndex != -1) {
+                val pathSegment = trimmed.substring(prefixIndex)
+                val queryIndex = pathSegment.indexOf('?')
+                return if (queryIndex != -1) pathSegment.substring(0, queryIndex) else pathSegment
+            }
+        }
+
+        return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) "" else trimmed.trimStart('/')
     }
 
     /**

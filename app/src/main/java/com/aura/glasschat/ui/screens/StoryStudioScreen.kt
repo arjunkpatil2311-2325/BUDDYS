@@ -3,6 +3,7 @@ package com.aura.glasschat.ui.screens
 import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -11,6 +12,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -23,7 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -55,6 +57,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.aura.glasschat.data.model.StoryDraft
 import com.aura.glasschat.data.model.StoryStickerItem
 import com.aura.glasschat.data.model.StoryTextOverlay
 import com.aura.glasschat.ui.components.BuddysButton
@@ -100,7 +103,15 @@ fun StoryStudioScreen(
     val context = LocalContext.current
 
     var showStickersSheet by remember { mutableStateOf(false) }
+    var showDraftsSheet by remember { mutableStateOf(false) }
+    var showExitConfirmation by remember { mutableStateOf(false) }
+    var showPollDialog by remember { mutableStateOf(false) }
+    var showQuestionDialog by remember { mutableStateOf(false) }
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadDrafts(context)
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -119,6 +130,11 @@ fun StoryStudioScreen(
                 viewModel.setImageUri(uri)
             }
         }
+    }
+
+    // Intercept back button when photo is selected
+    BackHandler(enabled = state.selectedImageUri != null) {
+        showExitConfirmation = true
     }
 
     LaunchedEffect(state.uploadSuccess) {
@@ -145,10 +161,12 @@ fun StoryStudioScreen(
             .imePadding()
     ) {
         if (state.selectedImageUri == null) {
-            // Intake Screen: Camera / Gallery Selector
+            // Intake Screen: Camera / Gallery Selector / Drafts
             StoryIntakeView(
+                draftsCount = state.drafts.size,
                 onGalleryClick = { galleryLauncher.launch("image/*") },
                 onCameraClick = { cameraLauncher.launch(null) },
+                onDraftsClick = { showDraftsSheet = true },
                 onBack = onBack
             )
         } else {
@@ -158,7 +176,7 @@ fun StoryStudioScreen(
                     .fillMaxSize()
                     .onGloballyPositioned { canvasSize = it.size }
             ) {
-                // Layer 0: Background Media with ColorMatrix Filter
+                // Layer 0: Background Media with Transformations (Pan / Zoom / Rotate / Double-tap reset)
                 val colorMatrix = remember(state.selectedFilter) {
                     when (state.selectedFilter) {
                         StoryFilter.WARM -> ColorMatrix(floatArrayOf(
@@ -185,13 +203,43 @@ fun StoryStudioScreen(
                     }
                 }
 
-                AsyncImage(
-                    model = state.selectedImageUri,
-                    contentDescription = "Story Background",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    colorFilter = ColorFilter.colorMatrix(colorMatrix)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(state.activeTool) {
+                            if (state.activeTool == StudioTool.NONE || state.activeTool == StudioTool.FILTERS) {
+                                detectTapGestures(
+                                    onDoubleTap = {
+                                        viewModel.resetPhotoTransform()
+                                        Toast.makeText(context, "Photo reset", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
+                        .pointerInput(state.activeTool) {
+                            if (state.activeTool == StudioTool.NONE || state.activeTool == StudioTool.FILTERS) {
+                                detectTransformGestures { _, pan, zoom, rotation ->
+                                    viewModel.updatePhotoTransform(pan, zoom, rotation)
+                                }
+                            }
+                        }
+                ) {
+                    AsyncImage(
+                        model = state.selectedImageUri,
+                        contentDescription = "Story Background",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                translationX = state.photoOffsetX
+                                translationY = state.photoOffsetY
+                                scaleX = state.photoScale
+                                scaleY = state.photoScale
+                                rotationZ = state.photoRotation
+                            },
+                        contentScale = ContentScale.Crop,
+                        colorFilter = ColorFilter.colorMatrix(colorMatrix)
+                    )
+                }
 
                 // Layer 1: Drawing Canvas (Strokes)
                 Canvas(
@@ -314,7 +362,8 @@ fun StoryStudioScreen(
                 // Layer 4: Top Studio Toolbar
                 if (state.activeTool != StudioTool.DRAWING) {
                     StudioTopBar(
-                        onBack = { viewModel.setImageUri(Uri.EMPTY) },
+                        onBack = { showExitConfirmation = true },
+                        onDraftsClick = { showDraftsSheet = true },
                         onTextClick = { viewModel.openTextEditor() },
                         onStickerClick = { showStickersSheet = true },
                         onDrawClick = { viewModel.setActiveTool(StudioTool.DRAWING) },
@@ -391,12 +440,162 @@ fun StoryStudioScreen(
                         viewModel.addSticker("MENTION", mapOf("username" to username))
                         showStickersSheet = false
                     },
+                    onSelectPoll = {
+                        showStickersSheet = false
+                        showPollDialog = true
+                    },
+                    onSelectQuestion = {
+                        showStickersSheet = false
+                        showQuestionDialog = true
+                    },
                     onSelectEmoji = { emoji ->
                         viewModel.addSticker("EMOJI", mapOf("emoji" to emoji))
                         showStickersSheet = false
                     }
                 )
             }
+        }
+
+        // Poll Creation Dialog
+        if (showPollDialog) {
+            var pollQuestion by remember { mutableStateOf("Ask a question...") }
+            AlertDialog(
+                onDismissRequest = { showPollDialog = false },
+                containerColor = Color(0xFF1E1E28),
+                title = { Text("Create Poll Sticker", color = Color.White, fontWeight = FontWeight.Bold) },
+                text = {
+                    OutlinedTextField(
+                        value = pollQuestion,
+                        onValueChange = { pollQuestion = it },
+                        label = { Text("Poll Question", color = Color.White.copy(alpha = 0.7f)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = BuddysTheme.colors.primaryRed
+                        ),
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.addSticker("POLL", mapOf("question" to pollQuestion.trim().ifBlank { "Ask a question..." }))
+                            showPollDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = BuddysTheme.colors.primaryRed)
+                    ) {
+                        Text("Add Poll", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPollDialog = false }) {
+                        Text("Cancel", color = Color.White.copy(alpha = 0.7f))
+                    }
+                }
+            )
+        }
+
+        // Question Creation Dialog
+        if (showQuestionDialog) {
+            var questionPrompt by remember { mutableStateOf("Ask me a question") }
+            AlertDialog(
+                onDismissRequest = { showQuestionDialog = false },
+                containerColor = Color(0xFF1E1E28),
+                title = { Text("Create Question Sticker", color = Color.White, fontWeight = FontWeight.Bold) },
+                text = {
+                    OutlinedTextField(
+                        value = questionPrompt,
+                        onValueChange = { questionPrompt = it },
+                        label = { Text("Prompt Title", color = Color.White.copy(alpha = 0.7f)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = BuddysTheme.colors.primaryRed
+                        ),
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.addSticker("QUESTION", mapOf("prompt" to questionPrompt.trim().ifBlank { "Ask me a question" }))
+                            showQuestionDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = BuddysTheme.colors.primaryRed)
+                    ) {
+                        Text("Add Sticker", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showQuestionDialog = false }) {
+                        Text("Cancel", color = Color.White.copy(alpha = 0.7f))
+                    }
+                }
+            )
+        }
+
+        // Saved Drafts Sheet
+        if (showDraftsSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showDraftsSheet = false },
+                containerColor = Color(0xFF16161E),
+                scrimColor = Color.Black.copy(alpha = 0.6f)
+            ) {
+                StoryDraftsSheetContent(
+                    drafts = state.drafts,
+                    onResumeDraft = { draft ->
+                        viewModel.resumeDraft(draft)
+                        showDraftsSheet = false
+                    },
+                    onDeleteDraft = { draftId ->
+                        viewModel.deleteDraft(context, draftId)
+                    }
+                )
+            }
+        }
+
+        // Exit / Save Draft Confirmation Dialog
+        if (showExitConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showExitConfirmation = false },
+                containerColor = Color(0xFF1E1E28),
+                title = { Text("Save this story?", color = Color.White, fontWeight = FontWeight.Bold) },
+                text = {
+                    Text(
+                        "You can save this story as a draft and finish editing it later, or discard your current edits.",
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.saveCurrentDraft(context)
+                            Toast.makeText(context, "Draft saved! 📝", Toast.LENGTH_SHORT).show()
+                            showExitConfirmation = false
+                            viewModel.setImageUri(Uri.EMPTY)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = BuddysTheme.colors.primaryRed)
+                    ) {
+                        Text("Save Draft", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    Row {
+                        TextButton(
+                            onClick = {
+                                showExitConfirmation = false
+                                viewModel.setImageUri(Uri.EMPTY)
+                            }
+                        ) {
+                            Text("Discard", color = Color(0xFFFF5252))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = { showExitConfirmation = false }) {
+                            Text("Cancel", color = Color.White.copy(alpha = 0.7f))
+                        }
+                    }
+                }
+            )
         }
     }
 }
@@ -406,8 +605,10 @@ fun StoryStudioScreen(
 // -------------------------------------------------------------
 @Composable
 private fun StoryIntakeView(
+    draftsCount: Int,
     onGalleryClick: () -> Unit,
     onCameraClick: () -> Unit,
+    onDraftsClick: () -> Unit,
     onBack: () -> Unit
 ) {
     Box(
@@ -424,6 +625,27 @@ private fun StoryIntakeView(
                 .background(Color.White.copy(alpha = 0.15f), CircleShape)
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+        }
+
+        if (draftsCount > 0) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.TopEnd)
+                    .clickable { onDraftsClick() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Drafts, contentDescription = "Drafts", tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Drafts ($draftsCount)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
         }
 
         Column(
@@ -452,7 +674,7 @@ private fun StoryIntakeView(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Capture a photo or choose from your gallery to design your 24h story with shaders, doodles & stickers.",
+                text = "Capture a photo or pick from gallery to design your 24h story with typography, interactive stickers & doodles.",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.White.copy(alpha = 0.65f),
                     textAlign = TextAlign.Center
@@ -515,6 +737,7 @@ private fun StoryIntakeView(
 @Composable
 private fun StudioTopBar(
     onBack: () -> Unit,
+    onDraftsClick: () -> Unit,
     onTextClick: () -> Unit,
     onStickerClick: () -> Unit,
     onDrawClick: () -> Unit,
@@ -533,7 +756,7 @@ private fun StudioTopBar(
                 .size(40.dp)
                 .background(Color.Black.copy(alpha = 0.45f), CircleShape)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Discard", tint = Color.White)
+            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
         }
 
         Row(
@@ -823,7 +1046,7 @@ private fun DraggableStickerView(
                 detectTransformGestures { _, pan, zoom, rotation ->
                     currentX = ((currentX * canvasSize.width + pan.x) / canvasSize.width).coerceIn(0.05f, 0.95f)
                     currentY = ((currentY * canvasSize.height + pan.y) / canvasSize.height).coerceIn(0.05f, 0.95f)
-                    currentScale = (currentScale * zoom).coerceIn(0.5f, 3.0f)
+                    currentScale = (currentScale * zoom).coerceIn(0.4f, 4.0f)
                     currentRotation += rotation
                     onUpdatePosition(currentX, currentY, currentScale, currentRotation)
                 }
@@ -876,6 +1099,97 @@ private fun DraggableStickerView(
                     )
                 }
             }
+            "POLL" -> {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color(0xFF1E1E28),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.width(200.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = sticker.data["question"] ?: "Ask a question...",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF00E676),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "YES",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = BuddysTheme.colors.primaryRed,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "NO",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            "QUESTION" -> {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.width(210.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = sticker.data["prompt"] ?: "Ask me a question",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFF0F0F5),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Type something...",
+                                color = Color.Gray,
+                                fontSize = 11.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
             "EMOJI" -> {
                 Text(
                     text = sticker.data["emoji"] ?: "🔥",
@@ -910,12 +1224,19 @@ private fun DraggableTextView(
     val fontFamily = when (overlay.style) {
         "TYPEWRITER" -> FontFamily.Monospace
         "STRONG" -> FontFamily.Serif
+        "MINIMAL" -> FontFamily.SansSerif
         else -> FontFamily.Default
     }
     val fontStyle = if (overlay.style == "STRONG") FontStyle.Italic else FontStyle.Normal
     val fontWeight = when (overlay.style) {
         "TYPEWRITER" -> FontWeight.Normal
+        "MINIMAL" -> FontWeight.Light
         else -> FontWeight.Black
+    }
+    val textAlign = when (overlay.alignment) {
+        "LEFT" -> TextAlign.Start
+        "RIGHT" -> TextAlign.End
+        else -> TextAlign.Center
     }
 
     Box(
@@ -930,26 +1251,27 @@ private fun DraggableTextView(
                 detectTransformGestures { _, pan, zoom, rotation ->
                     currentX = ((currentX * canvasSize.width + pan.x) / canvasSize.width).coerceIn(0.05f, 0.95f)
                     currentY = ((currentY * canvasSize.height + pan.y) / canvasSize.height).coerceIn(0.05f, 0.95f)
-                    currentScale = (currentScale * zoom).coerceIn(0.5f, 3.0f)
+                    currentScale = (currentScale * zoom).coerceIn(0.4f, 4.0f)
                     currentRotation += rotation
                     onUpdatePosition(currentX, currentY, currentScale, currentRotation)
                 }
             }
     ) {
         val hasBg = overlay.backgroundColor != 0L && overlay.backgroundColor != 0x00000000L
+        val bgAlpha = overlay.backgroundOpacity.coerceIn(0f, 1f)
         Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = if (hasBg) Color(overlay.backgroundColor) else Color.Transparent,
+            shape = RoundedCornerShape(14.dp),
+            color = if (hasBg) Color(overlay.backgroundColor).copy(alpha = bgAlpha) else Color.Transparent,
             shadowElevation = if (hasBg) 6.dp else 0.dp
         ) {
             Text(
                 text = overlay.text,
                 color = Color(overlay.color),
-                fontSize = 22.sp,
+                fontSize = overlay.fontSize.sp,
                 fontFamily = fontFamily,
                 fontStyle = fontStyle,
                 fontWeight = fontWeight,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
             )
         }
@@ -968,7 +1290,18 @@ private fun StoryTextEditorDialog(
     var text by remember { mutableStateOf(initialOverlay.text) }
     var style by remember { mutableStateOf(initialOverlay.style) }
     var colorLong by remember { mutableLongStateOf(initialOverlay.color) }
-    var hasBackground by remember { mutableStateOf(initialOverlay.backgroundColor != 0L && initialOverlay.backgroundColor != 0x00000000L) }
+    var alignment by remember { mutableStateOf(initialOverlay.alignment) }
+    var fontSize by remember { mutableFloatStateOf(initialOverlay.fontSize) }
+    // bgMode: 0 = none, 1 = semi-transparent, 2 = solid
+    var bgMode by remember {
+        mutableIntStateOf(
+            when {
+                initialOverlay.backgroundColor == 0L || initialOverlay.backgroundColor == 0x00000000L -> 0
+                initialOverlay.backgroundOpacity < 0.9f -> 1
+                else -> 2
+            }
+        )
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -977,12 +1310,12 @@ private fun StoryTextEditorDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.85f))
+                .background(Color.Black.copy(alpha = 0.88f))
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .padding(20.dp)
         ) {
-            // Header
+            // Header Controls: Close, Alignment, Background Pill Mode, Done
             Row(
                 modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -992,34 +1325,70 @@ private fun StoryTextEditorDialog(
                     Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.White)
                 }
 
-                // Background badge toggle
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (hasBackground) Color.White else Color.White.copy(alpha = 0.2f),
-                    modifier = Modifier.clickable { hasBackground = !hasBackground }
-                ) {
-                    Text(
-                        text = "A",
-                        color = if (hasBackground) Color.Black else Color.White,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // Alignment Toggle
+                    IconButton(
+                        onClick = {
+                            alignment = when (alignment) {
+                                "LEFT" -> "CENTER"
+                                "CENTER" -> "RIGHT"
+                                else -> "LEFT"
+                            }
+                        }
+                    ) {
+                        @Suppress("DEPRECATION")
+                        val alignIcon = when (alignment) {
+                            "LEFT" -> Icons.Default.FormatAlignLeft
+                            "RIGHT" -> Icons.Default.FormatAlignRight
+                            else -> Icons.Default.FormatAlignCenter
+                        }
+                        Icon(alignIcon, contentDescription = "Alignment", tint = Color.White)
+                    }
+
+                    // Background Pill Mode Toggle (Cycle: None -> Translucent -> Solid)
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = when (bgMode) {
+                            1 -> Color.White.copy(alpha = 0.5f)
+                            2 -> Color.White
+                            else -> Color.White.copy(alpha = 0.2f)
+                        },
+                        modifier = Modifier.clickable {
+                            bgMode = (bgMode + 1) % 3
+                        }
+                    ) {
+                        Text(
+                            text = "A",
+                            color = if (bgMode == 2) Color.Black else Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
                 }
 
                 BuddysButton(
                     text = "Done",
                     onClick = {
-                        val bgColor = if (hasBackground) {
-                            if (colorLong == 0xFFFFFFFF) 0xCC121216 else 0xCCFFFFFF
-                        } else 0x00000000L
+                        val bgColor = when (bgMode) {
+                            1, 2 -> if (colorLong == 0xFFFFFFFF) 0xFF121216 else 0xFFFFFFFF
+                            else -> 0x00000000L
+                        }
+                        val opacity = when (bgMode) {
+                            1 -> 0.65f
+                            2 -> 1.0f
+                            else -> 0.0f
+                        }
 
                         onSave(
                             initialOverlay.copy(
                                 text = text.trim(),
                                 style = style,
                                 color = colorLong,
-                                backgroundColor = bgColor
+                                backgroundColor = bgColor,
+                                backgroundOpacity = opacity,
+                                alignment = alignment,
+                                fontSize = fontSize
                             )
                         )
                     },
@@ -1027,7 +1396,7 @@ private fun StoryTextEditorDialog(
                 )
             }
 
-            // Center Text Input
+            // Center Text Input with live typography preview
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1037,21 +1406,31 @@ private fun StoryTextEditorDialog(
                 val fontFamily = when (style) {
                     "TYPEWRITER" -> FontFamily.Monospace
                     "STRONG" -> FontFamily.Serif
+                    "MINIMAL" -> FontFamily.SansSerif
                     else -> FontFamily.Default
                 }
                 val fontStyle = if (style == "STRONG") FontStyle.Italic else FontStyle.Normal
-                val fontWeight = if (style == "TYPEWRITER") FontWeight.Normal else FontWeight.Black
+                val fontWeight = when (style) {
+                    "TYPEWRITER" -> FontWeight.Normal
+                    "MINIMAL" -> FontWeight.Light
+                    else -> FontWeight.Black
+                }
+                val textAlign = when (alignment) {
+                    "LEFT" -> TextAlign.Start
+                    "RIGHT" -> TextAlign.End
+                    else -> TextAlign.Center
+                }
 
                 BasicTextField(
                     value = text,
                     onValueChange = { text = it },
                     textStyle = TextStyle(
                         color = Color(colorLong),
-                        fontSize = 28.sp,
+                        fontSize = fontSize.sp,
                         fontFamily = fontFamily,
                         fontStyle = fontStyle,
                         fontWeight = fontWeight,
-                        textAlign = TextAlign.Center
+                        textAlign = textAlign
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1061,8 +1440,8 @@ private fun StoryTextEditorDialog(
                             Text(
                                 "Type something...",
                                 color = Color.White.copy(alpha = 0.4f),
-                                fontSize = 28.sp,
-                                textAlign = TextAlign.Center,
+                                fontSize = fontSize.sp,
+                                textAlign = textAlign,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -1078,8 +1457,8 @@ private fun StoryTextEditorDialog(
                     .align(Alignment.BottomCenter)
                     .imePadding()
             ) {
-                // Style Selector
-                val styles = listOf("CLASSIC", "MODERN", "NEON", "TYPEWRITER", "STRONG")
+                // Style Selector (Classic, Modern, Strong, Typewriter, Minimal, Neon)
+                val styles = listOf("CLASSIC", "MODERN", "STRONG", "TYPEWRITER", "MINIMAL", "NEON")
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
@@ -1136,10 +1515,12 @@ private fun StickerPickerSheetContent(
     onSelectLocation: (String) -> Unit,
     onSelectTime: () -> Unit,
     onSelectMention: (String) -> Unit,
+    onSelectPoll: () -> Unit,
+    onSelectQuestion: () -> Unit,
     onSelectEmoji: (String) -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Widgets", "Emojis")
+    val tabs = listOf("Widgets & Stickers", "Emojis")
 
     Column(
         modifier = Modifier
@@ -1163,26 +1544,58 @@ private fun StickerPickerSheetContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (selectedTab == 0) {
-            // Interactive Widgets
+            // Interactive Widgets & Chips
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Poll Sticker
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFF1E1E28),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        modifier = Modifier.weight(1f).clickable { onSelectPoll() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("📊 Poll", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+
+                    // Question Sticker
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFF1E1E28),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        modifier = Modifier.weight(1f).clickable { onSelectQuestion() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("❓ Question", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+
                 // Time Widget
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFF1E1E28),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                    color = Color(0xFF1A1A24),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
                     modifier = Modifier.fillMaxWidth().clickable { onSelectTime() }
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("🕒 Current Time", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
+                        Text("🕒 Current Time", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
                     }
                 }
 
                 // Locations
-                val locations = listOf("Spider HQ", "Neon City", "New York", "Home Base")
                 Text("Locations", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                val locations = listOf("Spider HQ", "Neon City", "New York", "Home Base", "Buddies Lab")
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(locations) { loc ->
                         Surface(
@@ -1199,7 +1612,7 @@ private fun StickerPickerSheetContent(
                 // Mentions
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Mentions", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
-                val mentions = listOf("buddy", "spiderman", "aura", "squad")
+                val mentions = listOf("buddy", "spiderman", "aura", "squad", "bestie")
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(mentions) { men ->
                         Surface(
@@ -1235,6 +1648,115 @@ private fun StickerPickerSheetContent(
                                     .clickable { onSelectEmoji(em) }
                                     .padding(6.dp)
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+// -------------------------------------------------------------
+// STORY DRAFTS SHEET
+// -------------------------------------------------------------
+@Composable
+private fun StoryDraftsSheetContent(
+    drafts: List<StoryDraft>,
+    onResumeDraft: (StoryDraft) -> Unit,
+    onDeleteDraft: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Saved Story Drafts (${drafts.size})",
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        if (drafts.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No saved drafts yet.",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(drafts) { draft ->
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFF1E1E28),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                // Thumbnail
+                                AsyncImage(
+                                    model = draft.imageUriString,
+                                    contentDescription = "Draft Thumbnail",
+                                    modifier = Modifier
+                                        .size(54.dp)
+                                        .clip(RoundedCornerShape(10.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = draft.caption.ifBlank { "Story Draft" },
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        maxLines = 1
+                                    )
+                                    val formattedTime = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()).format(Date(draft.updatedAt))
+                                    Text(
+                                        text = formattedTime,
+                                        color = Color.White.copy(alpha = 0.5f),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Button(
+                                    onClick = { onResumeDraft(draft) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = BuddysTheme.colors.primaryRed),
+                                    shape = RoundedCornerShape(16.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Resume", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                IconButton(onClick = { onDeleteDraft(draft.id) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
+                                }
+                            }
                         }
                     }
                 }

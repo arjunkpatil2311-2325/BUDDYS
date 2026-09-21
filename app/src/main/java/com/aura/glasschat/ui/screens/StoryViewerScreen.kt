@@ -41,10 +41,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material.icons.filled.Refresh
+import coil.compose.SubcomposeAsyncImage
+import com.aura.glasschat.data.model.StoryStickerItem
+import com.aura.glasschat.data.model.StoryTextOverlay
 import com.aura.glasschat.data.model.StoryViewerEntry
 import com.aura.glasschat.data.model.UserStories
 import com.aura.glasschat.data.repository.ChatRepository
+import com.aura.glasschat.data.repository.SupabaseMediaStorageRepository
 import com.aura.glasschat.ui.components.AvatarView
 import com.aura.glasschat.ui.theme.*
 import com.aura.glasschat.ui.viewmodel.StoryViewModel
@@ -63,6 +73,7 @@ fun StoryViewerScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val mediaStorageRepo = remember { SupabaseMediaStorageRepository.getInstance() }
 
     LaunchedEffect(userStories) {
         viewModel.openStoryViewer(userStories, 0)
@@ -73,6 +84,24 @@ fun StoryViewerScreen(
     val currentIndex = uiState.currentStoryIndex
     val isSelf = currentStory?.userId == uiState.currentUserId
 
+    var resolvedMediaUrl by remember(currentStory?.id, currentStory?.mediaUrl) { mutableStateOf(currentStory?.mediaUrl ?: "") }
+    var isMediaLoading by remember(currentStory?.id) { mutableStateOf(true) }
+    var isMediaError by remember(currentStory?.id) { mutableStateOf(false) }
+
+    LaunchedEffect(currentStory?.id, currentStory?.mediaUrl) {
+        val raw = currentStory?.mediaUrl
+        if (!raw.isNullOrBlank()) {
+            isMediaLoading = true
+            isMediaError = false
+            try {
+                val freshUrl = mediaStorageRepo.resolveMediaUrl(raw, 3600)
+                resolvedMediaUrl = freshUrl
+            } catch (_: Exception) {
+                resolvedMediaUrl = raw
+            }
+        }
+    }
+
     var replyText by remember { mutableStateOf("") }
     var isSendingReply by remember { mutableStateOf(false) }
     var showViewerInsightsSheet by remember { mutableStateOf(false) }
@@ -81,8 +110,8 @@ fun StoryViewerScreen(
     // Segment progress timer (5000ms)
     val progress = remember { Animatable(0f) }
 
-    LaunchedEffect(currentIndex, uiState.isPaused, showViewerInsightsSheet) {
-        val paused = uiState.isPaused || showViewerInsightsSheet
+    LaunchedEffect(currentIndex, uiState.isPaused, showViewerInsightsSheet, isMediaLoading, isMediaError) {
+        val paused = uiState.isPaused || showViewerInsightsSheet || isMediaLoading || isMediaError
         if (!paused) {
             progress.snapTo(0f)
             progress.animateTo(
@@ -112,10 +141,8 @@ fun StoryViewerScreen(
             }
     ) {
         if (currentStory != null) {
-            // Story Image with Press & Tap Gestures
-            Image(
-                painter = rememberAsyncImagePainter(currentStory.mediaUrl),
-                contentDescription = "Story Image",
+            // Story Image with Press & Tap Gestures + Resolution handling
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(currentIndex) {
@@ -136,9 +163,85 @@ fun StoryViewerScreen(
                                 }
                             }
                         )
+                    }
+            ) {
+                SubcomposeAsyncImage(
+                    model = resolvedMediaUrl.ifBlank { currentStory.mediaUrl },
+                    contentDescription = "Story Image",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onSuccess = {
+                        isMediaLoading = false
+                        isMediaError = false
                     },
-                contentScale = ContentScale.Crop
-            )
+                    onError = {
+                        isMediaLoading = false
+                        isMediaError = true
+                    },
+                    loading = {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(36.dp),
+                                color = BuddysTheme.colors.primaryRed,
+                                strokeWidth = 3.dp
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF121218)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BrokenImage,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.4f),
+                                    modifier = Modifier.size(52.dp)
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text(
+                                    text = "Story media unavailable",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "The story media link may have expired or is private.",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            isMediaLoading = true
+                                            isMediaError = false
+                                            val fresh = mediaStorageRepo.resolveMediaUrl(currentStory.mediaUrl, 3600)
+                                            resolvedMediaUrl = fresh
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = BuddysTheme.colors.primaryRed),
+                                    shape = RoundedCornerShape(20.dp)
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Retry Loading", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                )
+            }
 
             // Top gradient overlay for text readability
             AnimatedVisibility(

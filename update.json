@@ -1,28 +1,30 @@
 {
-  "latestVersion": "0.4.6",
-  "versionCode": 10,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.6/app-universal-debug.apk",
+  "latestVersion": "0.4.7",
+  "versionCode": 11,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.7/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
   "fileSize": "49.9 MB",
   "abis": {
     "arm64-v8a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.6/app-arm64-v8a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.7/app-arm64-v8a-debug.apk",
       "apkFileName": "app-arm64-v8a-debug.apk",
-      "fileSize": "19.9 MB"
+      "fileSize": "20.0 MB"
     },
     "armeabi-v7a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.6/app-armeabi-v7a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.7/app-armeabi-v7a-debug.apk",
       "apkFileName": "app-armeabi-v7a-debug.apk",
-      "fileSize": "16.6 MB"
+      "fileSize": "16.7 MB"
     }
   },
   "releaseDate": "2026-09-21",
   "releaseNotes": [
-    "Complete Instagram-style Buddies UI redesign",
-    "Profile Highlights with custom covers",
-    "Pinned Posts on your profile",
-    "Native in-app App Updates experience",
-    "Optimized architecture-aware download (up to 48% smaller)",
+    "Story 404 / expired signed URL resolution fix",
+    "Instagram-style Story Studio",
+    "Pinch, zoom, pan & rotate photo editing",
+    "Resizable, rotatable & movable text overlays",
+    "Rich typography styles (Classic, Modern, Strong, Typewriter, Minimal, Neon) & alignment",
+    "Interactive stickers (Polls, Questions, Location, Time, Mentions, Emojis)",
+    "Local Story Drafts with auto-save, resume & discard",
     "Performance and stability enhancements"
   ],
   "isMandatory": false,

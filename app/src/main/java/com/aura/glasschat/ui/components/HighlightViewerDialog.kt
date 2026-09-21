@@ -32,11 +32,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import coil.compose.rememberAsyncImagePainter
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material.icons.filled.Refresh
+import coil.compose.SubcomposeAsyncImage
 import com.aura.glasschat.data.model.ProfileHighlight
 import com.aura.glasschat.data.model.Story
+import com.aura.glasschat.data.repository.SupabaseMediaStorageRepository
 import com.aura.glasschat.ui.theme.BuddysTheme
 import com.aura.glasschat.util.ChatUtils
+import kotlinx.coroutines.launch
 
 @Composable
 fun HighlightViewerDialog(
@@ -46,6 +50,9 @@ fun HighlightViewerDialog(
     onEditHighlight: (ProfileHighlight) -> Unit = {},
     onDeleteHighlight: (ProfileHighlight) -> Unit = {}
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val mediaStorageRepo = remember { SupabaseMediaStorageRepository.getInstance() }
+
     val stories = highlight.stories.ifEmpty {
         listOf(
             Story(
@@ -65,8 +72,27 @@ fun HighlightViewerDialog(
     val currentStory = stories.getOrNull(currentIndex) ?: stories.first()
     val progress = remember { Animatable(0f) }
 
-    LaunchedEffect(currentIndex, isPaused) {
-        if (!isPaused) {
+    var resolvedMediaUrl by remember(currentStory.id, currentStory.mediaUrl) { mutableStateOf(currentStory.mediaUrl) }
+    var isMediaLoading by remember(currentStory.id) { mutableStateOf(true) }
+    var isMediaError by remember(currentStory.id) { mutableStateOf(false) }
+
+    LaunchedEffect(currentStory.id, currentStory.mediaUrl) {
+        val raw = currentStory.mediaUrl
+        if (raw.isNotBlank()) {
+            isMediaLoading = true
+            isMediaError = false
+            try {
+                val fresh = mediaStorageRepo.resolveMediaUrl(raw, 3600)
+                resolvedMediaUrl = fresh
+            } catch (_: Exception) {
+                resolvedMediaUrl = raw
+            }
+        }
+    }
+
+    LaunchedEffect(currentIndex, isPaused, isMediaLoading, isMediaError) {
+        val paused = isPaused || isMediaLoading || isMediaError
+        if (!paused) {
             progress.snapTo(0f)
             progress.animateTo(
                 targetValue = 1f,
@@ -102,10 +128,8 @@ fun HighlightViewerDialog(
                     }
                 }
         ) {
-            // Story Image
-            Image(
-                painter = rememberAsyncImagePainter(currentStory.mediaUrl),
-                contentDescription = "Highlight Media",
+            // Story Image with Dynamic Signed URL Resolution
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(currentIndex) {
@@ -130,9 +154,85 @@ fun HighlightViewerDialog(
                                 }
                             }
                         )
+                    }
+            ) {
+                SubcomposeAsyncImage(
+                    model = resolvedMediaUrl.ifBlank { currentStory.mediaUrl },
+                    contentDescription = "Highlight Media",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onSuccess = {
+                        isMediaLoading = false
+                        isMediaError = false
                     },
-                contentScale = ContentScale.Crop
-            )
+                    onError = {
+                        isMediaLoading = false
+                        isMediaError = true
+                    },
+                    loading = {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(36.dp),
+                                color = BuddysTheme.colors.primaryRed,
+                                strokeWidth = 3.dp
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF121218)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BrokenImage,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.4f),
+                                    modifier = Modifier.size(52.dp)
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text(
+                                    text = "Highlight media unavailable",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Media URL may have expired or is private.",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            isMediaLoading = true
+                                            isMediaError = false
+                                            val fresh = mediaStorageRepo.resolveMediaUrl(currentStory.mediaUrl, 3600)
+                                            resolvedMediaUrl = fresh
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = BuddysTheme.colors.primaryRed),
+                                    shape = RoundedCornerShape(20.dp)
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Retry Loading", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                )
+            }
 
             // Top gradient
             AnimatedVisibility(
