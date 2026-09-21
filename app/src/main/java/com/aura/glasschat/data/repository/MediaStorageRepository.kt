@@ -10,8 +10,10 @@ interface MediaStorageRepository {
     suspend fun uploadChatImage(chatId: String, messageId: String, imageBytes: ByteArray, senderId: String = ""): Result<String>
     suspend fun uploadChatVoice(chatId: String, messageId: String, audioFile: File, senderId: String = ""): Result<String>
     suspend fun uploadStoryMedia(storyId: String, userId: String, imageBytes: ByteArray, audience: String = "EVERYONE"): Result<String>
+    suspend fun uploadPostMedia(postId: String, userId: String, imageBytes: ByteArray): Result<String>
     suspend fun deleteChatMedia(chatId: String, messageId: String): Result<Unit>
     suspend fun deleteStoryMedia(storyId: String): Result<Unit>
+    suspend fun deletePostMedia(postId: String): Result<Unit>
     suspend fun deleteProfilePicture(userId: String): Result<Unit>
 }
 
@@ -190,6 +192,44 @@ class SupabaseMediaStorageRepository(
     }
 
     /**
+     * Uploads post media to: posts/{postId}/{userId}_image.jpg
+     * Returns signed access URL for private bucket.
+     */
+    override suspend fun uploadPostMedia(
+        postId: String,
+        userId: String,
+        imageBytes: ByteArray
+    ): Result<String> {
+        if (postId.isBlank() || userId.isBlank()) {
+            return Result.failure(IllegalArgumentException("Post ID and User ID cannot be blank"))
+        }
+        if (imageBytes.isEmpty()) {
+            return Result.failure(IllegalArgumentException("Post image bytes cannot be empty"))
+        }
+
+        val storagePath = "posts/$postId/${userId}_image.jpg"
+        val uploadResult = storageClient.uploadBytes(
+            path = storagePath,
+            bytes = imageBytes,
+            contentType = "image/jpeg",
+            upsert = true
+        )
+
+        return uploadResult.fold(
+            onSuccess = { path ->
+                storageClient.createSignedUrl(
+                    path = path,
+                    expiresInSeconds = SupabaseConfig.POST_MEDIA_SIGNED_URL_EXPIRY_SECONDS
+                )
+            },
+            onFailure = { error ->
+                Log.e(TAG, "Failed to upload post media: $storagePath", error)
+                Result.failure(error)
+            }
+        )
+    }
+
+    /**
      * Deletes chat media associated with a message.
      */
     override suspend fun deleteChatMedia(chatId: String, messageId: String): Result<Unit> {
@@ -213,6 +253,18 @@ class SupabaseMediaStorageRepository(
         val paths = mutableListOf("stories/$storyId/image.jpg")
         if (currentUid.isNotBlank()) {
             paths.add("stories/$storyId/${currentUid}_image.jpg")
+        }
+        return storageClient.deleteObjects(paths)
+    }
+
+    /**
+     * Deletes post media file.
+     */
+    override suspend fun deletePostMedia(postId: String): Result<Unit> {
+        val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+        val paths = mutableListOf("posts/$postId/image.jpg")
+        if (currentUid.isNotBlank()) {
+            paths.add("posts/$postId/${currentUid}_image.jpg")
         }
         return storageClient.deleteObjects(paths)
     }

@@ -13,6 +13,7 @@ object SupabaseConfig {
     const val AVATAR_SIGNED_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60 // 7 days
     const val CHAT_MEDIA_SIGNED_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60 // 7 days
     const val STORY_SIGNED_URL_EXPIRY_SECONDS = 24 * 60 * 60 // 24 hours
+    const val POST_MEDIA_SIGNED_URL_EXPIRY_SECONDS = 30 * 24 * 60 * 60 // 30 days
 
     val projectUrl: String
         get() = BuildConfig.SUPABASE_URL.ifBlank { DEFAULT_PROJECT_URL }

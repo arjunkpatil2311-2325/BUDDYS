@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -601,8 +601,8 @@ fun BuddysFollowButton(
 }
 
 /**
- * Social Feed Moment Card (Instagram/Snapchat hybrid style).
- * Supports author avatar with story ring, double tap like, media preview, interactive reactions, comments, bookmarking.
+ * Modern Social Feed Post Item (Clean Instagram-style content-first layout).
+ * Supports author avatar with story ring, native full-width media, double-tap like, comments, bookmarking.
  */
 @Composable
 fun SocialFeedMomentCard(
@@ -623,33 +623,33 @@ fun SocialFeedMomentCard(
     onAuthorClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    BuddysCard(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        backgroundColor = BuddysTheme.colors.surface,
-        borderColor = BuddysTheme.colors.border,
-        shape = RoundedCornerShape(18.dp)
+            .padding(vertical = 4.dp),
+        color = BuddysTheme.colors.surface,
+        border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(vertical = 12.dp)
         ) {
             // 1. Author Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
                     .clickable(enabled = onAuthorClick != null) { onAuthorClick?.invoke() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Avatar with Story Ring gradient
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
                         .background(StoryRingGradient)
-                        .padding(2.dp),
+                        .padding(1.5.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -657,7 +657,7 @@ fun SocialFeedMomentCard(
                             .fillMaxSize()
                             .clip(CircleShape)
                             .background(BuddysTheme.colors.surface)
-                            .padding(1.5.dp),
+                            .padding(1.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         if (!authorAvatarUrl.isNullOrBlank()) {
@@ -680,7 +680,7 @@ fun SocialFeedMomentCard(
                                 Text(
                                     text = authorName.take(1).uppercase(),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
+                                    fontSize = 15.sp,
                                     color = BuddysTheme.colors.primaryRed
                                 )
                             }
@@ -693,7 +693,7 @@ fun SocialFeedMomentCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = authorName,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
                         color = BuddysTheme.colors.textPrimary,
                         maxLines = 1,
@@ -718,28 +718,13 @@ fun SocialFeedMomentCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 2. Caption
-            if (caption.isNotBlank()) {
-                Text(
-                    text = caption,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        color = BuddysTheme.colors.textPrimary
-                    ),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-
-            // 3. Media Preview (if present)
+            // 2. Media Preview (Full-width native social styling)
             if (!mediaUrl.isNullOrBlank()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(240.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .height(280.dp)
                         .background(BuddysTheme.colors.surfaceSecondary)
-                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onDoubleTap = { onLikeClick() }
@@ -757,37 +742,37 @@ fun SocialFeedMomentCard(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // 4. Action Bar (Like, Comment, Direct Share, Bookmark)
+            // 3. Action Bar (Like, Comment, Direct Share, Bookmark)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Like button
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable(onClick = onLikeClick)
-                            .padding(4.dp),
+                            .clickable(onClick = onLikeClick),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Like",
-                            tint = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary,
-                            modifier = Modifier.size(22.dp)
+                            tint = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textPrimary,
+                            modifier = Modifier.size(24.dp)
                         )
                         if (likeCount > 0) {
-                            Spacer(modifier = Modifier.width(5.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = likeCount.toString(),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary
+                                color = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textPrimary
                             )
                         }
                     }
@@ -795,56 +780,285 @@ fun SocialFeedMomentCard(
                     // Comment button
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable(onClick = onCommentClick)
-                            .padding(4.dp),
+                            .clickable(onClick = onCommentClick),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ChatBubbleOutline,
                             contentDescription = "Comment",
-                            tint = BuddysTheme.colors.textSecondary,
-                            modifier = Modifier.size(21.dp)
+                            tint = BuddysTheme.colors.textPrimary,
+                            modifier = Modifier.size(23.dp)
                         )
                         if (commentCount > 0) {
-                            Spacer(modifier = Modifier.width(5.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = commentCount.toString(),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = BuddysTheme.colors.textSecondary
+                                color = BuddysTheme.colors.textPrimary
                             )
                         }
                     }
 
                     // Share button
-                    IconButton(
-                        onClick = onShareClick,
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Send,
-                            contentDescription = "Share",
-                            tint = BuddysTheme.colors.textSecondary,
-                            modifier = Modifier.size(19.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Share",
+                        tint = BuddysTheme.colors.textPrimary,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clickable(onClick = onShareClick)
+                    )
                 }
 
                 // Bookmark button
-                IconButton(
-                    onClick = onBookmarkClick,
-                    modifier = Modifier.size(30.dp)
+                Icon(
+                    imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Bookmark",
+                    tint = if (isBookmarked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textPrimary,
+                    modifier = Modifier
+                        .size(23.dp)
+                        .clickable(onClick = onBookmarkClick)
+                )
+            }
+
+            // 4. Caption & Details
+            if (caption.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp)
                 ) {
-                    Icon(
-                        imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription = "Bookmark",
-                        tint = if (isBookmarked) BuddysTheme.colors.warning else BuddysTheme.colors.textSecondary,
-                        modifier = Modifier.size(21.dp)
+                    Text(
+                        text = authorName + " ",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = BuddysTheme.colors.textPrimary
+                    )
+                    Text(
+                        text = caption,
+                        fontSize = 14.sp,
+                        lineHeight = 19.sp,
+                        color = BuddysTheme.colors.textPrimary
                     )
                 }
             }
+
+            if (commentCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "View all $commentCount comments",
+                    fontSize = 12.sp,
+                    color = BuddysTheme.colors.textMuted,
+                    modifier = Modifier
+                        .padding(horizontal = 14.dp)
+                        .clickable { onCommentClick() }
+                )
+            }
         }
+    }
+}
+
+/**
+ * Standard Modern Settings Row.
+ */
+@Composable
+fun BuddysSettingRow(
+    title: String,
+    subtitle: String? = null,
+    icon: ImageVector? = null,
+    iconTint: Color = BuddysTheme.colors.textPrimary,
+    badge: String? = null,
+    trailingText: String? = null,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(BuddysTheme.colors.surfaceSecondary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = BuddysTheme.colors.textPrimary,
+                    fontSize = 14.5.sp
+                )
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = BuddysTheme.colors.textSecondary,
+                        fontSize = 12.sp
+                    )
+                )
+            }
+        }
+
+        if (!badge.isNullOrBlank()) {
+            Surface(
+                color = BuddysTheme.colors.primaryRed,
+                shape = CircleShape
+            ) {
+                Text(
+                    text = badge,
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        if (!trailingText.isNullOrBlank()) {
+            Text(
+                text = trailingText,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = BuddysTheme.colors.textMuted,
+                    fontSize = 13.sp
+                )
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+
+        if (onClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = null,
+                tint = BuddysTheme.colors.textMuted,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Standard Modern Settings Section Card.
+ */
+@Composable
+fun BuddysSettingSection(
+    title: String? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (!title.isNullOrBlank()) {
+            Text(
+                text = title.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = BuddysTheme.colors.textMuted,
+                    letterSpacing = 0.8.sp,
+                    fontSize = 11.5.sp
+                ),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = BuddysTheme.colors.surface,
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                content()
+            }
+        }
+    }
+}
+
+/**
+ * Standard Switch Settings Row.
+ */
+@Composable
+fun BuddysSwitchRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    subtitle: String? = null,
+    icon: ImageVector? = null,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(BuddysTheme.colors.surfaceSecondary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = BuddysTheme.colors.textPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = BuddysTheme.colors.textPrimary,
+                    fontSize = 14.5.sp
+                )
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = BuddysTheme.colors.textSecondary,
+                        fontSize = 12.sp
+                    )
+                )
+            }
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = BuddysTheme.colors.primaryRed,
+                uncheckedThumbColor = BuddysTheme.colors.textSecondary,
+                uncheckedTrackColor = BuddysTheme.colors.surfaceSecondary
+            )
+        )
     }
 }
 

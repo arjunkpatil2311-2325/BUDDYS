@@ -94,6 +94,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val storyUiState by storyViewModel.uiState.collectAsState()
+    val profileUiState by profileViewModel.uiState.collectAsState()
     val currentUser = uiState.currentUser
     val authRepository = remember { com.aura.glasschat.data.repository.AuthRepository() }
     val currentUid = (currentUser?.uid ?: "").ifBlank { authRepository.currentUserId }
@@ -143,7 +144,15 @@ fun HomeScreen(
         }
     }
 
-    val profileUiState by profileViewModel.uiState.collectAsState()
+    val postImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            profileViewModel.createPost(context, uri, "Shared from Buddies ✨")
+            Toast.makeText(context, "Posting moment...", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LaunchedEffect(profileUiState.isLoggedOut) {
         if (profileUiState.isLoggedOut) {
             onLoggedOut()
@@ -809,6 +818,8 @@ fun HomeScreen(
 
                         BuddysFullProfileView(
                             user = profileUser,
+                            highlights = profileUiState.highlights,
+                            posts = profileUiState.posts,
                             onBack = null,
                             onOpenEditProfile = onOpenEditProfile,
                             onOpenPrivacySettings = onOpenPrivacySettings,
@@ -817,6 +828,11 @@ fun HomeScreen(
                             onOpenCreateStory = onOpenCreateStory,
                             onOpenAccountSwitcher = { showAccountSwitcherSheet = true },
                             onPhotoOptionsClick = { profileViewModel.openPhotoOptions() },
+                            onOpenCreateHighlight = { profileViewModel.openCreateHighlight() },
+                            onHighlightClick = { highlight -> profileViewModel.openHighlightViewer(highlight) },
+                            onHighlightLongClick = { highlight -> profileViewModel.openEditHighlight(highlight) },
+                            onPostClick = { post -> profileViewModel.selectPostForDetail(post) },
+                            onCreatePostClick = { postImageLauncher.launch("image/*") },
                             onSignOutClick = { profileViewModel.signOut() }
                         )
 
@@ -849,7 +865,7 @@ fun HomeScreen(
                                                     .fillMaxWidth()
                                                     .clip(RoundedCornerShape(12.dp))
                                                     .clickable { profileViewModel.removePhoto() }
-                                                    .padding(12.dp),
+                                                .padding(12.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Icon(Icons.Default.Delete, contentDescription = null, tint = BuddysTheme.colors.error, modifier = Modifier.size(22.dp))
@@ -863,6 +879,67 @@ fun HomeScreen(
                                     TextButton(onClick = { profileViewModel.dismissPhotoOptions() }) {
                                         Text("Cancel", color = BuddysTheme.colors.textSecondary)
                                     }
+                                }
+                            )
+                        }
+
+                        // Create Highlight Sheet
+                        if (profileUiState.showCreateHighlightSheet) {
+                            CreateHighlightSheet(
+                                availableStories = profileUiState.archivedStories,
+                                isSaving = profileUiState.isSavingHighlight,
+                                onDismiss = { profileViewModel.closeCreateHighlight() },
+                                onSaveHighlight = { title, coverUrl, selectedStories ->
+                                    profileViewModel.createHighlight(title, coverUrl, selectedStories)
+                                }
+                            )
+                        }
+
+                        // Edit Highlight Sheet
+                        if (profileUiState.selectedHighlightForEdit != null) {
+                            EditHighlightSheet(
+                                highlight = profileUiState.selectedHighlightForEdit!!,
+                                availableStories = profileUiState.archivedStories,
+                                isSaving = profileUiState.isSavingHighlight,
+                                onDismiss = { profileViewModel.closeEditHighlight() },
+                                onUpdateHighlight = { title, coverUrl, selectedStories ->
+                                    profileViewModel.updateHighlight(profileUiState.selectedHighlightForEdit!!.id, title, coverUrl, selectedStories)
+                                },
+                                onDeleteHighlight = {
+                                    profileViewModel.deleteHighlight(profileUiState.selectedHighlightForEdit!!.id)
+                                }
+                            )
+                        }
+
+                        // Highlight Viewer Dialog
+                        if (profileUiState.activeHighlightForViewing != null) {
+                            HighlightViewerDialog(
+                                highlight = profileUiState.activeHighlightForViewing!!,
+                                isOwner = true,
+                                onClose = { profileViewModel.closeHighlightViewer() },
+                                onEditHighlight = { highlight -> profileViewModel.openEditHighlight(highlight) },
+                                onDeleteHighlight = { highlight -> profileViewModel.deleteHighlight(highlight.id) }
+                            )
+                        }
+
+                        // Post Detail Dialog
+                        if (profileUiState.selectedPostForDetail != null) {
+                            PostDetailDialog(
+                                post = profileUiState.selectedPostForDetail!!,
+                                isOwner = true,
+                                currentUserId = currentUid,
+                                pinnedPostsCount = profileUiState.pinnedPostsCount,
+                                onDismiss = { profileViewModel.selectPostForDetail(null) },
+                                onTogglePin = { post -> profileViewModel.togglePinPost(post) },
+                                onDeletePost = { post -> profileViewModel.deletePost(post) },
+                                onToggleLike = { post -> profileViewModel.toggleLikePost(post) },
+                                onSharePost = { post ->
+                                    val sendIntent = android.content.Intent().apply {
+                                        action = android.content.Intent.ACTION_SEND
+                                        putExtra(android.content.Intent.EXTRA_TEXT, "Check out @${post.username}'s moment on Buddies: ${post.caption}")
+                                        type = "text/plain"
+                                    }
+                                    context.startActivity(android.content.Intent.createChooser(sendIntent, "Share moment via"))
                                 }
                             )
                         }
@@ -1355,78 +1432,68 @@ private fun TopBuddysHeader(
     onMoreClick: () -> Unit = {}
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth(),
         color = BuddysTheme.colors.surface,
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, BuddysTheme.colors.border.copy(alpha = 0.8f)),
-        shadowElevation = 2.dp
+        border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .height(54.dp)
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Action Cluster: 3D Avatar
+            // Left: Brand Wordmark
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ThreeDAvatar(
-                    imageUrl = userAvatarUrl,
-                    displayName = userDisplayName,
-                    size = 38.dp,
-                    isOnline = true,
-                    onClick = onProfileClick
-                )
-
-                ThreeDIconButton(
-                    onClick = onSearchClick,
-                    icon = Icons.Default.Search,
-                    contentDescription = "Search",
-                    size = 36.dp,
-                    iconSize = 18.dp
-                )
-            }
-
-            // Center Brand Title: Emblem + BUDDYS
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                BuddysSpiderEmblem(size = 18.dp, tint = BuddysTheme.colors.primaryRed)
-                Spacer(modifier = Modifier.width(6.dp))
+                BuddysSpiderEmblem(size = 22.dp, tint = BuddysTheme.colors.primaryRed)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Buddies",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Black,
                         color = BuddysTheme.colors.textPrimary,
-                        fontSize = 19.sp,
-                        letterSpacing = 1.5.sp
+                        fontSize = 22.sp,
+                        letterSpacing = (-0.5).sp
                     )
                 )
             }
 
-            // Right Action Cluster: Notifications, Add Friend
+            // Right Action Cluster: Notifications, Search, Add Friend
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Box(contentAlignment = Alignment.TopEnd) {
-                    ThreeDIconButton(
-                        onClick = onActivityClick,
-                        icon = Icons.Default.NotificationsNone,
-                        contentDescription = "Notifications",
-                        size = 36.dp,
-                        iconSize = 18.dp
+                IconButton(
+                    onClick = onSearchClick,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = BuddysTheme.colors.textPrimary,
+                        modifier = Modifier.size(23.dp)
                     )
+                }
+
+                Box(contentAlignment = Alignment.TopEnd) {
+                    IconButton(
+                        onClick = onActivityClick,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FavoriteBorder,
+                            contentDescription = "Activity",
+                            tint = BuddysTheme.colors.textPrimary,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    }
                     if (unreadNotificationCount > 0) {
                         Box(
                             modifier = Modifier
-                                .offset(x = 2.dp, y = (-2).dp)
+                                .offset(x = (-4).dp, y = 6.dp)
                                 .size(8.dp)
                                 .clip(CircleShape)
                                 .background(BuddysTheme.colors.primaryRed)
@@ -1434,13 +1501,17 @@ private fun TopBuddysHeader(
                     }
                 }
 
-                ThreeDIconButton(
+                IconButton(
                     onClick = onAddFriendClick,
-                    icon = Icons.Default.PersonAdd,
-                    contentDescription = "Add Buddy",
-                    size = 36.dp,
-                    iconSize = 17.dp
-                )
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = "Add Buddy",
+                        tint = BuddysTheme.colors.textPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
     }

@@ -45,7 +45,7 @@ fun UpdateDialog(
     onInstallClick: () -> Unit,
     onDismissClick: () -> Unit
 ) {
-    val isVisible = state !is UpdateUiState.Idle && state !is UpdateUiState.Checking
+    val isVisible = state !is UpdateUiState.Idle && state !is UpdateUiState.Checking && state !is UpdateUiState.UpToDate
 
     if (!isVisible) return
 
@@ -54,6 +54,8 @@ fun UpdateDialog(
         is UpdateUiState.Downloading -> state.isMandatory
         is UpdateUiState.ReadyToInstall -> state.isMandatory
         is UpdateUiState.Error -> state.isMandatory
+        is UpdateUiState.DownloadError -> state.isMandatory
+        is UpdateUiState.ValidationError -> state.isMandatory
         else -> false
     }
 
@@ -131,13 +133,13 @@ fun UpdateDialog(
                                 imageVector = when (state) {
                                     is UpdateUiState.ReadyToInstall -> Icons.Default.CheckCircle
                                     is UpdateUiState.Downloading -> Icons.Default.Download
-                                    is UpdateUiState.Error -> Icons.Default.Info
+                                    is UpdateUiState.Error, is UpdateUiState.DownloadError, is UpdateUiState.ValidationError -> Icons.Default.Info
                                     else -> Icons.Default.SystemUpdate
                                 },
                                 contentDescription = null,
                                 tint = when (state) {
                                     is UpdateUiState.ReadyToInstall -> BuddysTheme.colors.success
-                                    is UpdateUiState.Error -> BuddysTheme.colors.error
+                                    is UpdateUiState.Error, is UpdateUiState.DownloadError, is UpdateUiState.ValidationError -> BuddysTheme.colors.error
                                     else -> BuddysTheme.colors.primaryAccent
                                 },
                                 modifier = Modifier.size(28.dp)
@@ -151,6 +153,8 @@ fun UpdateDialog(
                             is UpdateUiState.Downloading -> state.manifest.latestVersion
                             is UpdateUiState.ReadyToInstall -> state.manifest.latestVersion
                             is UpdateUiState.Error -> state.manifest?.latestVersion ?: "New Version"
+                            is UpdateUiState.DownloadError -> state.manifest?.latestVersion ?: "New Version"
+                            is UpdateUiState.ValidationError -> state.manifest?.latestVersion ?: "New Version"
                             else -> "New Version"
                         }
 
@@ -159,6 +163,8 @@ fun UpdateDialog(
                             is UpdateUiState.Downloading -> state.manifest.fileSize
                             is UpdateUiState.ReadyToInstall -> state.manifest.fileSize
                             is UpdateUiState.Error -> state.manifest?.fileSize ?: ""
+                            is UpdateUiState.DownloadError -> state.manifest?.fileSize ?: ""
+                            is UpdateUiState.ValidationError -> state.manifest?.fileSize ?: ""
                             else -> ""
                         }
 
@@ -340,6 +346,62 @@ fun UpdateDialog(
                                 }
                             }
 
+                            is UpdateUiState.DownloadError -> {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = BuddysTheme.colors.error.copy(alpha = 0.12f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.error.copy(alpha = 0.3f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = null,
+                                            tint = BuddysTheme.colors.error,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = state.message,
+                                            color = BuddysTheme.colors.textPrimary,
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                    }
+                                }
+                            }
+
+                            is UpdateUiState.ValidationError -> {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = BuddysTheme.colors.error.copy(alpha = 0.12f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.error.copy(alpha = 0.3f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = null,
+                                            tint = BuddysTheme.colors.error,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = state.message,
+                                            color = BuddysTheme.colors.textPrimary,
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                    }
+                                }
+                            }
+
                             else -> {}
                         }
 
@@ -404,7 +466,7 @@ fun UpdateDialog(
                                     )
                                 }
 
-                                is UpdateUiState.Error -> {
+                                is UpdateUiState.Error, is UpdateUiState.DownloadError, is UpdateUiState.ValidationError -> {
                                     CalmActionButton(
                                         text = "Retry",
                                         icon = Icons.Default.Download,

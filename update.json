@@ -1,15 +1,29 @@
 {
-  "latestVersion": "0.4.3",
-  "versionCode": 7,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.3/app-universal-debug.apk",
+  "latestVersion": "0.4.6",
+  "versionCode": 10,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.6/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
-  "fileSize": "68.6 MB",
-  "releaseDate": "2026-09-19",
+  "fileSize": "49.9 MB",
+  "abis": {
+    "arm64-v8a": {
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.6/app-arm64-v8a-debug.apk",
+      "apkFileName": "app-arm64-v8a-debug.apk",
+      "fileSize": "19.9 MB"
+    },
+    "armeabi-v7a": {
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.6/app-armeabi-v7a-debug.apk",
+      "apkFileName": "app-armeabi-v7a-debug.apk",
+      "fileSize": "16.6 MB"
+    }
+  },
+  "releaseDate": "2026-09-21",
   "releaseNotes": [
-    "Much faster Tap to Buddy discovery",
-    "Reliable two-device pairing",
-    "False discovery timeout/error fix",
-    "Improved pairing stability"
+    "Complete Instagram-style Buddies UI redesign",
+    "Profile Highlights with custom covers",
+    "Pinned Posts on your profile",
+    "Native in-app App Updates experience",
+    "Optimized architecture-aware download (up to 48% smaller)",
+    "Performance and stability enhancements"
   ],
   "isMandatory": false,
   "minimumSupportedVersionCode": 1

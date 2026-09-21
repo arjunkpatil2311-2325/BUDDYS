@@ -16,8 +16,12 @@ import java.io.File
 import android.util.Log
 
 sealed interface UpdateUiState {
-    data object Idle : UpdateUiState
+    data class Idle(val lastCheckTimestamp: Long = 0L) : UpdateUiState
     data object Checking : UpdateUiState
+    data class UpToDate(
+        val version: String = BuildConfig.VERSION_NAME,
+        val lastCheckTimestamp: Long = System.currentTimeMillis()
+    ) : UpdateUiState
     data class UpdateAvailable(
         val manifest: UpdateManifest,
         val isMandatory: Boolean
@@ -32,6 +36,16 @@ sealed interface UpdateUiState {
     data class ReadyToInstall(
         val manifest: UpdateManifest,
         val apkFile: File,
+        val isMandatory: Boolean
+    ) : UpdateUiState
+    data class DownloadError(
+        val manifest: UpdateManifest?,
+        val message: String = "Check your connection and try again.",
+        val isMandatory: Boolean
+    ) : UpdateUiState
+    data class ValidationError(
+        val manifest: UpdateManifest?,
+        val message: String = "The downloaded update was rejected for safety.",
         val isMandatory: Boolean
     ) : UpdateUiState
     data class Error(
@@ -51,7 +65,7 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
 
     val availableUpdate: StateFlow<UpdateManifest?> = updateManager.availableUpdate
 
-    private val _uiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
+    private val _uiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle(updateManager.getLastCheckTime()))
     val uiState: StateFlow<UpdateUiState> = _uiState.asStateFlow()
 
     init {
@@ -70,6 +84,8 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+
+    fun getLastCheckTime(): Long = updateManager.getLastCheckTime()
 
     /**
      * Manually triggers the update dialog/flow for a manifest.
@@ -90,17 +106,39 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
     fun checkForUpdates(force: Boolean = false) {
         viewModelScope.launch {
             Log.d(TAG, "[CHECK FOR UPDATES] Initiating check (force=$force)")
-            val manifest = updateManager.checkForUpdates(force)
-            if (manifest != null) {
-                val currentVersionCode = BuildConfig.VERSION_CODE
-                val isMandatory = manifest.isMandatory || (currentVersionCode < manifest.minimumSupportedVersionCode)
-                Log.d(TAG, "[CHECK RESULT] Update found v${manifest.latestVersion}, presenting dialog")
-                _uiState.value = UpdateUiState.UpdateAvailable(
-                    manifest = manifest,
-                    isMandatory = isMandatory
-                )
-            } else {
-                Log.d(TAG, "[CHECK RESULT] No new update returned by UpdateManager")
+            if (force) {
+                _uiState.value = UpdateUiState.Checking
+            }
+            try {
+                val manifest = updateManager.checkForUpdates(force)
+                if (manifest != null) {
+                    val currentVersionCode = BuildConfig.VERSION_CODE
+                    val isMandatory = manifest.isMandatory || (currentVersionCode < manifest.minimumSupportedVersionCode)
+                    Log.d(TAG, "[CHECK RESULT] Update found v${manifest.latestVersion}")
+                    _uiState.value = UpdateUiState.UpdateAvailable(
+                        manifest = manifest,
+                        isMandatory = isMandatory
+                    )
+                } else {
+                    Log.d(TAG, "[CHECK RESULT] App is up to date")
+                    if (force || _uiState.value is UpdateUiState.Checking) {
+                        _uiState.value = UpdateUiState.UpToDate(
+                            version = BuildConfig.VERSION_NAME,
+                            lastCheckTimestamp = System.currentTimeMillis()
+                        )
+                    } else if (_uiState.value !is UpdateUiState.UpdateAvailable) {
+                        _uiState.value = UpdateUiState.Idle(updateManager.getLastCheckTime())
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "[CHECK ERROR] ${e.message}", e)
+                if (force) {
+                    _uiState.value = UpdateUiState.DownloadError(
+                        manifest = null,
+                        message = "Check your connection and try again.",
+                        isMandatory = false
+                    )
+                }
             }
         }
     }
@@ -140,9 +178,17 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
                         // Trigger installer automatically
                         installApk(state.apkFile)
                     }
+                    is DownloadState.ValidationError -> {
+                        Log.e(TAG, "[VALIDATION ERROR] ${state.message}")
+                        _uiState.value = UpdateUiState.ValidationError(
+                            manifest = manifest,
+                            message = state.message,
+                            isMandatory = isMandatory
+                        )
+                    }
                     is DownloadState.Error -> {
                         Log.e(TAG, "[DOWNLOAD ERROR] ${state.message}")
-                        _uiState.value = UpdateUiState.Error(
+                        _uiState.value = UpdateUiState.DownloadError(
                             manifest = manifest,
                             message = state.message,
                             isMandatory = isMandatory
@@ -174,6 +220,6 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
         Log.d(TAG, "[DISMISSED WITH LATER] Dialog closed. Centralized available update remains active: ${availableUpdate.value?.latestVersion ?: "none"}")
-        _uiState.value = UpdateUiState.Idle
+        _uiState.value = UpdateUiState.Idle(updateManager.getLastCheckTime())
     }
 }

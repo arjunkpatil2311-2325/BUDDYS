@@ -1,0 +1,19 @@
+{"users": [
+{
+  "localId": "ILDai0WdkZScN5d8S0X8YjqSvJY2",
+  "email": "arjun.kpatil2311@gmail.com",
+  "emailVerified": true,
+  "displayName": "Arjun Patil",
+  "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocKnHG5szHafUeH_-9KcZ8jBZ7QzepHD_pKj3mFdTuEL1eD3=s96-c",
+  "lastSignedInAt": "1789648536828",
+  "createdAt": "1789647499231",
+  "providerUserInfo": [
+    {
+      "providerId": "google.com",
+      "rawId": "112587624055923141347",
+      "email": "arjun.kpatil2311@gmail.com",
+      "displayName": "Arjun Patil",
+      "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocKnHG5szHafUeH_-9KcZ8jBZ7QzepHD_pKj3mFdTuEL1eD3=s96-c"
+    }
+  ]
+}]}

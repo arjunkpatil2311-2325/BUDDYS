@@ -26,8 +26,8 @@ android {
         applicationId = "com.aura.glasschat"
         minSdk = 26
         targetSdk = 34
-        versionCode = 9
-        versionName = "0.4.5"
+        versionCode = 10
+        versionName = "0.4.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -67,6 +67,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -82,7 +91,7 @@ android {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = true
         }
     }
@@ -125,7 +134,6 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.storage.ktx)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.play.services)

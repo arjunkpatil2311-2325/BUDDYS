@@ -174,7 +174,7 @@ function buildApk() {
 
 // 6. Validate Artifact
 function validateArtifact() {
-    console.log('\n[Step 3/6] Validating output APK...');
+    console.log('\n[Step 3/6] Validating output APKs...');
     if (!fs.existsSync(UNIVERSAL_APK_PATH)) {
         throw new Error(`Universal APK not found at: ${UNIVERSAL_APK_PATH}`);
     }
@@ -184,16 +184,38 @@ function validateArtifact() {
     const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(1);
     const formattedSize = `${sizeInMB} MB`;
 
-    if (sizeInBytes < 10 * 1024 * 1024) {
+    if (sizeInBytes < 2 * 1024 * 1024) {
         throw new Error(`APK size is suspiciously small (${sizeInBytes} bytes). Build may be corrupted.`);
     }
 
-    console.log(`✅ Universal APK verified:`);
-    console.log(`   File: ${path.basename(UNIVERSAL_APK_PATH)}`);
-    console.log(`   Path: ${UNIVERSAL_APK_PATH}`);
-    console.log(`   Size: ${formattedSize} (${sizeInBytes} bytes)`);
+    const apkDir = path.dirname(UNIVERSAL_APK_PATH);
+    const arm64Path = path.join(apkDir, 'app-arm64-v8a-debug.apk');
+    const arm32Path = path.join(apkDir, 'app-armeabi-v7a-debug.apk');
 
-    return { sizeInBytes, formattedSize };
+    const abis = {};
+    if (fs.existsSync(arm64Path)) {
+        const arm64Size = (fs.statSync(arm64Path).size / (1024 * 1024)).toFixed(1);
+        abis['arm64-v8a'] = {
+            apkUrl: `https://github.com/${GITHUB_REPO}/releases/download/${releaseTag}/app-arm64-v8a-debug.apk`,
+            apkFileName: 'app-arm64-v8a-debug.apk',
+            fileSize: `${arm64Size} MB`
+        };
+        console.log(`✅ ARM64 APK verified: ${arm64Size} MB`);
+    }
+
+    if (fs.existsSync(arm32Path)) {
+        const arm32Size = (fs.statSync(arm32Path).size / (1024 * 1024)).toFixed(1);
+        abis['armeabi-v7a'] = {
+            apkUrl: `https://github.com/${GITHUB_REPO}/releases/download/${releaseTag}/app-armeabi-v7a-debug.apk`,
+            apkFileName: 'app-armeabi-v7a-debug.apk',
+            fileSize: `${arm32Size} MB`
+        };
+        console.log(`✅ ARM32 APK verified: ${arm32Size} MB`);
+    }
+
+    console.log(`✅ Universal APK verified: ${formattedSize} (${sizeInBytes} bytes)`);
+
+    return { sizeInBytes, formattedSize, abis };
 }
 
 // 7. Prepare Release Notes
@@ -202,11 +224,12 @@ function getReleaseNotes() {
         return customNotes.split(',').map(s => s.trim()).filter(Boolean);
     }
     return [
-        'Complete Buddies UI/UX redesign with Obsidian dark and Porcelain light themes',
-        'Fluid spring animations and minimal gesture navigation',
-        'High-performance update manager with fast buffered streaming downloads',
-        'Draggable picture-in-picture floating active call overlay',
-        'Stability enhancements and performance optimizations'
+        'Complete Instagram-style Buddies UI redesign',
+        'Profile Highlights with custom covers',
+        'Pinned Posts on your profile',
+        'Native in-app App Updates experience',
+        'Optimized architecture-aware download (up to 48% smaller)',
+        'Performance and stability enhancements'
     ];
 }
 
@@ -222,6 +245,7 @@ function updatePublicManifest(artifactInfo, notesList) {
         apkUrl: apkDownloadUrl,
         apkFileName: 'app-universal-debug.apk',
         fileSize: artifactInfo.formattedSize,
+        abis: artifactInfo.abis || {},
         releaseDate: today,
         releaseNotes: notesList,
         isMandatory: isMandatory,

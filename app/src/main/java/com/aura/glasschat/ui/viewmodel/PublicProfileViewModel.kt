@@ -2,12 +2,17 @@ package com.aura.glasschat.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aura.glasschat.data.model.Post
+import com.aura.glasschat.data.model.ProfileHighlight
 import com.aura.glasschat.data.model.User
 import com.aura.glasschat.data.repository.AuthRepository
 import com.aura.glasschat.data.repository.FollowRepository
+import com.aura.glasschat.data.repository.HighlightRepository
+import com.aura.glasschat.data.repository.PostRepository
 import com.aura.glasschat.data.repository.RelationshipState
 import com.aura.glasschat.data.repository.UserRepository
 import com.aura.glasschat.util.ChatUtils
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,23 +23,36 @@ data class PublicProfileUiState(
     val targetUser: User? = null,
     val currentUserId: String = "",
     val relationshipState: RelationshipState = RelationshipState.NOT_FOLLOWING,
+    val highlights: List<ProfileHighlight> = emptyList(),
+    val posts: List<Post> = emptyList(),
+    val selectedPostForDetail: Post? = null,
+    val activeHighlightForViewing: ProfileHighlight? = null,
     val isBlocked: Boolean = false,
     val isLoading: Boolean = true,
     val isActionLoading: Boolean = false,
     val reportSuccess: Boolean = false,
     val errorMessage: String? = null
-)
+) {
+    val canViewPrivateContent: Boolean
+        get() = targetUser?.isPrivate != true || relationshipState == RelationshipState.FOLLOWING || relationshipState == RelationshipState.MUTUAL || currentUserId == targetUser?.uid
+}
 
 class PublicProfileViewModel(
     private val userRepository: UserRepository = UserRepository(),
     private val followRepository: FollowRepository = FollowRepository(),
-    private val authRepository: AuthRepository = AuthRepository()
+    private val authRepository: AuthRepository = AuthRepository(),
+    private val highlightRepository: HighlightRepository = HighlightRepository(),
+    private val postRepository: PostRepository = PostRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PublicProfileUiState())
     val uiState: StateFlow<PublicProfileUiState> = _uiState.asStateFlow()
 
     private var currentUser: User? = null
+    private var highlightsJob: Job? = null
+    private var postsJob: Job? = null
+    private var userJob: Job? = null
+    private var relationshipJob: Job? = null
 
     fun loadProfile(targetUserId: String) {
         val currentUid = authRepository.currentUserId
@@ -46,8 +64,8 @@ class PublicProfileViewModel(
             _uiState.update { it.copy(isBlocked = blocked) }
         }
 
-        // 1. Observe target user profile
-        viewModelScope.launch {
+        userJob?.cancel()
+        userJob = viewModelScope.launch {
             userRepository.observeUserProfile(targetUserId).collect { user ->
                 _uiState.update {
                     it.copy(
@@ -58,11 +76,52 @@ class PublicProfileViewModel(
             }
         }
 
-        // 2. Observe relationship state
-        viewModelScope.launch {
+        relationshipJob?.cancel()
+        relationshipJob = viewModelScope.launch {
             followRepository.observeRelationshipState(currentUid, targetUserId).collect { status ->
                 _uiState.update { it.copy(relationshipState = status) }
             }
+        }
+
+        highlightsJob?.cancel()
+        highlightsJob = viewModelScope.launch {
+            highlightRepository.observeUserHighlights(targetUserId).collect { highlights ->
+                _uiState.update { it.copy(highlights = highlights) }
+            }
+        }
+
+        postsJob?.cancel()
+        postsJob = viewModelScope.launch {
+            postRepository.observeUserPosts(targetUserId).collect { posts ->
+                _uiState.update {
+                    val currentDetail = it.selectedPostForDetail
+                    val updatedDetail = if (currentDetail != null) {
+                        posts.find { p -> p.id == currentDetail.id } ?: currentDetail
+                    } else null
+                    it.copy(posts = posts, selectedPostForDetail = updatedDetail)
+                }
+            }
+        }
+    }
+
+    fun selectPostForDetail(post: Post?) {
+        _uiState.update { it.copy(selectedPostForDetail = post) }
+    }
+
+    fun openHighlightViewer(highlight: ProfileHighlight) {
+        _uiState.update { it.copy(activeHighlightForViewing = highlight) }
+    }
+
+    fun closeHighlightViewer() {
+        _uiState.update { it.copy(activeHighlightForViewing = null) }
+    }
+
+    fun toggleLikePost(post: Post) {
+        val currentUid = _uiState.value.currentUserId
+        if (currentUid.isEmpty()) return
+
+        viewModelScope.launch {
+            postRepository.toggleLikePost(post.id, currentUid)
         }
     }
 

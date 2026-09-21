@@ -1,9 +1,13 @@
 package com.aura.glasschat.ui.screens
 
+import android.content.Intent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,11 +20,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import com.aura.glasschat.data.model.Post
+import com.aura.glasschat.data.model.ProfileHighlight
 import com.aura.glasschat.data.repository.RelationshipState
 import com.aura.glasschat.ui.components.*
 import com.aura.glasschat.ui.theme.BuddysTheme
@@ -38,11 +49,14 @@ fun PublicProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+
     var showMenu by remember { mutableStateOf(false) }
     var showBlockDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
     var selectedReportReason by remember { mutableStateOf("Spam") }
     var reportDetails by remember { mutableStateOf("") }
+    var selectedContentTab by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(userId) {
         viewModel.loadProfile(userId)
@@ -298,7 +312,6 @@ fun PublicProfileScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    // Follow / Following / Requested / Follow Back Button
                                     val buttonText = when (uiState.relationshipState) {
                                         RelationshipState.MUTUAL -> "Following"
                                         RelationshipState.FOLLOWING -> "Following"
@@ -339,7 +352,6 @@ fun PublicProfileScreen(
                                         }
                                     }
 
-                                    // Message Button
                                     BuddysButton(
                                         text = "Message",
                                         onClick = {
@@ -357,9 +369,10 @@ fun PublicProfileScreen(
                         }
                     }
 
-                    // Private Account Notice (if applicable)
-                    if (user.isPrivate && uiState.relationshipState != RelationshipState.FOLLOWING && uiState.relationshipState != RelationshipState.MUTUAL && uiState.currentUserId != user.uid) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Public vs Private Account Check
+                    if (!uiState.canViewPrivateContent) {
                         BuddysCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
@@ -378,9 +391,137 @@ fun PublicProfileScreen(
                                 )
                             }
                         }
+                    } else {
+                        // Highlights Row (Visitors)
+                        if (uiState.highlights.isNotEmpty()) {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                items(uiState.highlights, key = { it.id }) { highlight ->
+                                    PublicHighlightItem(
+                                        highlight = highlight,
+                                        onClick = { viewModel.openHighlightViewer(highlight) }
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        // Content Grid (3-Column Posts with Pinned Posts first)
+                        if (uiState.posts.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(BuddysTheme.colors.surface)
+                                    .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
+                                    .padding(vertical = 24.dp, horizontal = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No posts yet",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = BuddysTheme.colors.textSecondary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                )
+                            }
+                        } else {
+                            val chunkedPosts = remember(uiState.posts) { uiState.posts.chunked(3) }
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                chunkedPosts.forEach { rowPosts ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        rowPosts.forEach { post ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .aspectRatio(1f)
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(BuddysTheme.colors.surfaceSecondary)
+                                                    .clickable { viewModel.selectPostForDetail(post) }
+                                            ) {
+                                                Image(
+                                                    painter = rememberAsyncImagePainter(post.mediaUrl),
+                                                    contentDescription = "Post Thumbnail",
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+
+                                                if (post.isPinned) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .align(Alignment.TopEnd)
+                                                            .padding(6.dp)
+                                                            .size(22.dp)
+                                                            .clip(CircleShape)
+                                                            .background(Color.Black.copy(alpha = 0.65f)),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.PushPin,
+                                                            contentDescription = "Pinned",
+                                                            tint = Color.White,
+                                                            modifier = Modifier.size(13.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        repeat(3 - rowPosts.size) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(30.dp))
                 }
             }
+        }
+
+        // Highlight Viewer Dialog
+        if (uiState.activeHighlightForViewing != null) {
+            HighlightViewerDialog(
+                highlight = uiState.activeHighlightForViewing!!,
+                isOwner = false,
+                onClose = { viewModel.closeHighlightViewer() }
+            )
+        }
+
+        // Post Detail Dialog (for visitor)
+        if (uiState.selectedPostForDetail != null) {
+            PostDetailDialog(
+                post = uiState.selectedPostForDetail!!,
+                isOwner = false,
+                currentUserId = uiState.currentUserId,
+                pinnedPostsCount = 0,
+                onDismiss = { viewModel.selectPostForDetail(null) },
+                onTogglePin = {},
+                onDeletePost = {},
+                onToggleLike = { post -> viewModel.toggleLikePost(post) },
+                onSharePost = { post ->
+                    val sendIntent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, "Check out @${post.username}'s moment on Buddies: ${post.caption}")
+                        type = "text/plain"
+                    }
+                    context.startActivity(Intent.createChooser(sendIntent, "Share moment via"))
+                }
+            )
         }
     }
 
@@ -461,6 +602,58 @@ fun PublicProfileScreen(
                 }
             },
             containerColor = BuddysTheme.colors.surface
+        )
+    }
+}
+
+@Composable
+private fun PublicHighlightItem(
+    highlight: ProfileHighlight,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .border(1.5.dp, BuddysTheme.colors.border, CircleShape)
+                .padding(2.dp)
+                .clip(CircleShape)
+                .background(BuddysTheme.colors.surfaceSecondary),
+            contentAlignment = Alignment.Center
+        ) {
+            if (highlight.coverUrl.isNotBlank()) {
+                Image(
+                    painter = rememberAsyncImagePainter(highlight.coverUrl),
+                    contentDescription = highlight.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.CameraAlt,
+                    contentDescription = null,
+                    tint = BuddysTheme.colors.primaryRed,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = highlight.title,
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = BuddysTheme.colors.textPrimary,
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp
+            ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

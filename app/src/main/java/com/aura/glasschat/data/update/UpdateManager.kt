@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
 sealed class DownloadState {
     data class Progress(val progress: Float, val downloadedBytes: Long, val totalBytes: Long) : DownloadState()
     data class Success(val apkFile: File) : DownloadState()
+    data class ValidationError(val message: String = "The downloaded update was rejected for safety.") : DownloadState()
     data class Error(val message: String) : DownloadState()
 }
 
@@ -175,16 +176,21 @@ class UpdateManager(private val context: Context) {
      */
     fun downloadApk(manifest: UpdateManifest): Flow<DownloadState> = flow {
         try {
-            Log.d(TAG, "[DOWNLOAD START] File: ${manifest.apkFileName}, Target URL: ${manifest.apkUrl}, Stated size: ${manifest.fileSize}")
+            val asset = manifest.getAssetForDevice()
+            val targetUrl = asset.apkUrl.ifBlank { manifest.apkUrl }
+            val fileName = asset.apkFileName.ifBlank { manifest.apkFileName }
+            val statedSize = asset.fileSize.ifBlank { manifest.fileSize }
+
+            Log.d(TAG, "[DOWNLOAD START] Architecture-aware selection -> ABI: ${Build.SUPPORTED_ABIS.firstOrNull()}, File: $fileName, Target URL: $targetUrl, Stated size: $statedSize")
             val updatesDir = File(context.cacheDir, "updates").apply { mkdirs() }
-            val apkFile = File(updatesDir, manifest.apkFileName)
+            val apkFile = File(updatesDir, fileName)
 
             if (apkFile.exists()) {
                 apkFile.delete()
             }
 
             val request = Request.Builder()
-                .url(manifest.apkUrl)
+                .url(targetUrl)
                 .header("User-Agent", "Buddies-Android/${BuildConfig.VERSION_NAME}")
                 .get()
                 .build()
@@ -249,11 +255,19 @@ class UpdateManager(private val context: Context) {
                 outputStream.flush()
                 Log.d(TAG, "[DOWNLOAD COMPLETE] Finished downloading ${apkFile.length()} bytes to ${apkFile.absolutePath}")
 
-                if (apkFile.length() < 10 * 1024 * 1024) {
-                    Log.e(TAG, "[DOWNLOAD CORRUPTED] Output file size ${apkFile.length()} bytes is too small")
+                val downloadedSize = apkFile.length()
+                val isSizeValid = if (contentLength > 0) downloadedSize == contentLength else downloadedSize >= 2 * 1024 * 1024
+                if (!isSizeValid || downloadedSize < 2 * 1024 * 1024) {
+                    Log.e(TAG, "[DOWNLOAD CORRUPTED] Output file size $downloadedSize bytes is invalid (expected: $contentLength)")
                     emit(DownloadState.Error("Downloaded file is incomplete or corrupted."))
                 } else {
-                    emit(DownloadState.Success(apkFile))
+                    val archiveInfo = context.packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0)
+                    if (archiveInfo == null || archiveInfo.packageName != context.packageName) {
+                        Log.e(TAG, "[DOWNLOAD REJECTED] APK package verification failed: expected ${context.packageName}, got ${archiveInfo?.packageName}")
+                        emit(DownloadState.ValidationError("The downloaded update was rejected for safety."))
+                    } else {
+                        emit(DownloadState.Success(apkFile))
+                    }
                 }
 
             } finally {
@@ -318,5 +332,9 @@ class UpdateManager(private val context: Context) {
                 Log.w(TAG, "Failed to open specific package installer settings", e)
             }
         }
+    }
+
+    fun getLastCheckTime(): Long {
+        return prefs.getLong(KEY_LAST_CHECK, 0L)
     }
 }

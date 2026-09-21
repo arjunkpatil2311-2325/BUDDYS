@@ -48,6 +48,7 @@ fun PrivacySettingsScreen(
     onOpenCloseFriends: () -> Unit = {},
     onOpenStoryArchive: () -> Unit = {},
     onOpenStorageManager: () -> Unit = {},
+    onOpenAppUpdates: () -> Unit = {},
     onOpenHiddenChats: () -> Unit = {},
     onLoggedOut: () -> Unit = {},
     viewModel: PrivacySettingsViewModel = viewModel()
@@ -915,113 +916,60 @@ fun PrivacySettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            // Version Header Row
+                        Column(modifier = Modifier.padding(vertical = 6.dp)) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { onOpenAppUpdates() }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(BuddysTheme.colors.primaryAccent.copy(alpha = 0.12f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Info,
-                                            contentDescription = null,
-                                            tint = BuddysTheme.colors.primaryAccent,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.SystemUpdate,
+                                        contentDescription = null,
+                                        tint = BuddysTheme.colors.primaryRed,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(14.dp))
                                     Column {
                                         Text(
-                                            text = "Buddies",
+                                            text = "App Updates",
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
+                                            fontSize = 14.5.sp,
                                             color = BuddysTheme.colors.textPrimary
                                         )
                                         Text(
-                                            text = "Version ${BuildConfig.VERSION_NAME}",
-                                            fontSize = 12.5.sp,
+                                            text = "Current version ${BuildConfig.VERSION_NAME}",
+                                            fontSize = 12.sp,
                                             color = BuddysTheme.colors.textSecondary
                                         )
                                     }
                                 }
 
-                                Surface(
-                                    color = if (availableUpdate != null) BuddysTheme.colors.primaryAccent.copy(alpha = 0.15f) else Color(0xFF22A06B).copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = if (availableUpdate != null) "Update Ready" else "Latest",
-                                        color = if (availableUpdate != null) BuddysTheme.colors.primaryAccent else Color(0xFF22A06B),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-                            HorizontalDivider(color = BuddysTheme.colors.border.copy(alpha = 0.6f), thickness = 0.8.dp)
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            if (availableUpdate != null) {
-                                val manifest = availableUpdate!!
-                                Text(
-                                    text = "v${manifest.latestVersion} is available to install (${manifest.fileSize})",
-                                    fontSize = 13.sp,
-                                    color = BuddysTheme.colors.textPrimary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Button(
-                                    onClick = { updateManager.requestUpdatePrompt(manifest) },
-                                    modifier = Modifier.fillMaxWidth().height(42.dp),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = BuddysTheme.colors.primaryAccent,
-                                        contentColor = Color.White
-                                    )
-                                ) {
-                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Update to v${manifest.latestVersion}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                }
-                            } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Your app is up to date",
-                                        fontSize = 13.sp,
-                                        color = BuddysTheme.colors.textSecondary
-                                    )
-
-                                    BuddysOutlinedButton(
-                                        text = if (isCheckingUpdates) "Checking..." else "Check for updates",
-                                        onClick = {
-                                            if (!isCheckingUpdates) {
-                                                isCheckingUpdates = true
-                                                coroutineScope.launch {
-                                                    val (hasUpdate, manifest) = updateManager.forceCheckForUpdate()
-                                                    isCheckingUpdates = false
-                                                    if (hasUpdate && manifest != null) {
-                                                        updateManager.requestUpdatePrompt(manifest)
-                                                    } else {
-                                                        Toast.makeText(context, "Buddies is up to date (v${BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        modifier = Modifier.height(36.dp)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (availableUpdate != null) {
+                                        Surface(
+                                            color = BuddysTheme.colors.primaryRed.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "Update available",
+                                                color = BuddysTheme.colors.primaryRed,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 11.sp,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                        contentDescription = null,
+                                        tint = BuddysTheme.colors.textMuted,
+                                        modifier = Modifier.size(14.dp)
                                     )
                                 }
                             }
