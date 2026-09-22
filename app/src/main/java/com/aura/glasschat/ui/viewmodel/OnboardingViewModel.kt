@@ -32,6 +32,7 @@ enum class OnboardingStep {
     PHOTO,
     BIO,
     RULES,
+    APP_LOCK_SETUP,
     COMPLETE
 }
 

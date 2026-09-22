@@ -97,7 +97,7 @@ val DarkBuddysColors = BuddysColorScheme(
     webGeometryTint = Color.Transparent
 )
 
-val LocalBuddysColors = staticCompositionLocalOf { DarkBuddysColors }
+val LocalBuddysColors = staticCompositionLocalOf { LightBuddysColors }
 
 object BuddysTheme {
     val colors: BuddysColorScheme

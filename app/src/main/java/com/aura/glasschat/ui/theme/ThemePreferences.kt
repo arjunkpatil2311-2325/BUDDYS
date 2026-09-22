@@ -17,17 +17,17 @@ object ThemePreferences {
     private const val KEY_THEME_MODE = "key_theme_mode"
 
     private var prefs: SharedPreferences? = null
-    private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
+    private val _themeMode = MutableStateFlow(AppThemeMode.LIGHT)
     val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
 
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs = p
-        val saved = p.getString(KEY_THEME_MODE, AppThemeMode.SYSTEM.name) ?: AppThemeMode.SYSTEM.name
+        val saved = p.getString(KEY_THEME_MODE, AppThemeMode.LIGHT.name) ?: AppThemeMode.LIGHT.name
         val mode = try {
             AppThemeMode.valueOf(saved)
         } catch (_: Exception) {
-            AppThemeMode.SYSTEM
+            AppThemeMode.LIGHT
         }
         _themeMode.value = mode
     }

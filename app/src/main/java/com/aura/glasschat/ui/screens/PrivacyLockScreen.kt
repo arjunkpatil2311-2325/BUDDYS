@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.aura.glasschat.security.AppLockManager
 import com.aura.glasschat.security.BiometricAuthManager
 import com.aura.glasschat.security.PinVerificationResult
+import com.aura.glasschat.ui.components.BuddiesLogo
 import com.aura.glasschat.ui.components.BuddysButton
-import com.aura.glasschat.ui.components.BuddysSpiderEmblem
 import com.aura.glasschat.ui.theme.BuddysTheme
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -159,21 +159,21 @@ fun PrivacyLockScreen(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                BuddysSpiderEmblem(
-                    size = 48.dp,
-                    tint = BuddysTheme.colors.primaryRed
+                BuddiesLogo(
+                    size = 56.dp,
+                    tint = BuddysTheme.colors.primaryAccent
                 )
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Buddies",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 3.sp,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.5).sp,
                         color = BuddysTheme.colors.textPrimary,
-                        fontSize = 18.sp
+                        fontSize = 22.sp
                     )
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Enter Privacy PIN",
                     style = MaterialTheme.typography.headlineSmall.copy(

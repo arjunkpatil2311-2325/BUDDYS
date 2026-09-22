@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -122,6 +123,7 @@ fun OnboardingScreen(
                                     OnboardingStep.PHOTO -> OnboardingStep.USERNAME
                                     OnboardingStep.BIO -> OnboardingStep.PHOTO
                                     OnboardingStep.RULES -> OnboardingStep.BIO
+                                    OnboardingStep.APP_LOCK_SETUP -> OnboardingStep.RULES
                                     else -> OnboardingStep.WELCOME
                                 }
                                 viewModel.goToStep(prevStep)
@@ -205,9 +207,23 @@ fun OnboardingScreen(
                         }
                         OnboardingStep.RULES -> {
                             RulesStepContent(
-                                isLoading = uiState.isLoading,
+                                isLoading = false,
                                 errorMessage = uiState.errorMessage,
-                                onAgree = { viewModel.finishOnboarding() }
+                                onAgree = { viewModel.goToStep(OnboardingStep.APP_LOCK_SETUP) }
+                            )
+                        }
+                        OnboardingStep.APP_LOCK_SETUP -> {
+                            AppLockOnboardingStepContent(
+                                isLoading = uiState.isLoading,
+                                onPinSet = { pin, enableBio ->
+                                    val pinMgr = com.aura.glasschat.security.AppLockManager.getInstance(context).pinManager
+                                    pinMgr.setPin(pin)
+                                    pinMgr.setBiometricEnabled(enableBio)
+                                    viewModel.finishOnboarding()
+                                },
+                                onSkip = {
+                                    viewModel.finishOnboarding()
+                                }
                             )
                         }
                         OnboardingStep.COMPLETE -> {
@@ -822,5 +838,236 @@ fun CompleteStepContent(
             onClick = onFinish,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+@Composable
+fun AppLockOnboardingStepContent(
+    isLoading: Boolean,
+    onPinSet: (pin: String, enableBio: Boolean) -> Unit,
+    onSkip: () -> Unit
+) {
+    var firstPin by remember { mutableStateOf("") }
+    var confirmPin by remember { mutableStateOf("") }
+    var isConfirming by remember { mutableStateOf(false) }
+    var enableBiometrics by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val activePin = if (isConfirming) confirmPin else firstPin
+
+    fun handleDigit(digit: String) {
+        if (activePin.length >= 4) return
+        val updated = activePin + digit
+        errorMessage = null
+
+        if (!isConfirming) {
+            firstPin = updated
+            if (updated.length == 4) {
+                isConfirming = true
+            }
+        } else {
+            confirmPin = updated
+            if (updated.length == 4) {
+                if (confirmPin == firstPin) {
+                    onPinSet(confirmPin, enableBiometrics)
+                } else {
+                    errorMessage = "PINs do not match. Try again."
+                    confirmPin = ""
+                }
+            }
+        }
+    }
+
+    fun handleBackspace() {
+        if (isConfirming) {
+            if (confirmPin.isNotEmpty()) {
+                confirmPin = confirmPin.dropLast(1)
+            } else {
+                isConfirming = false
+                firstPin = firstPin.dropLast(1)
+            }
+        } else {
+            if (firstPin.isNotEmpty()) {
+                firstPin = firstPin.dropLast(1)
+            }
+        }
+        errorMessage = null
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        BuddiesLogo(size = 52.dp, tint = BuddysTheme.colors.primaryAccent)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = if (isConfirming) "Confirm Privacy PIN" else "Set Privacy PIN",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = BuddysTheme.colors.textPrimary,
+                fontSize = 23.sp
+            ),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = if (isConfirming) "Re-enter your 4-digit PIN to confirm" else "Protect your Buddies chats and moments with a 4-digit lock code",
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = BuddysTheme.colors.textSecondary,
+                fontSize = 13.sp
+            ),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 4 PIN Dots
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            for (i in 0 until 4) {
+                val isFilled = i < activePin.length
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isFilled) BuddysTheme.colors.primaryAccent
+                            else BuddysTheme.colors.surfaceSecondary
+                        )
+                        .border(
+                            1.5.dp,
+                            if (isFilled) BuddysTheme.colors.primaryAccent
+                            else BuddysTheme.colors.border,
+                            CircleShape
+                        )
+                )
+            }
+        }
+
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = errorMessage ?: "",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = BuddysTheme.colors.error,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Keypad
+        val keypadRows = listOf(
+            listOf("1", "2", "3"),
+            listOf("4", "5", "6"),
+            listOf("7", "8", "9"),
+            listOf("", "0", "BACKSPACE")
+        )
+
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            for (row in keypadRows) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    for (key in row) {
+                        when (key) {
+                            "" -> Spacer(modifier = Modifier.size(60.dp))
+                            "BACKSPACE" -> {
+                                Box(
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .clip(CircleShape)
+                                        .clickable { handleBackspace() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Backspace,
+                                        contentDescription = "Backspace",
+                                        tint = BuddysTheme.colors.textPrimary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            else -> {
+                                Box(
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .clip(CircleShape)
+                                        .background(BuddysTheme.colors.surface)
+                                        .border(1.dp, BuddysTheme.colors.border, CircleShape)
+                                        .clickable { handleDigit(key) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = key,
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = BuddysTheme.colors.textPrimary,
+                                            fontSize = 22.sp
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Biometric toggle
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { enableBiometrics = !enableBiometrics }
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = enableBiometrics,
+                onCheckedChange = { enableBiometrics = it },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = BuddysTheme.colors.primaryAccent,
+                    uncheckedColor = BuddysTheme.colors.textSecondary
+                )
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Enable Fingerprint / Biometrics",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = BuddysTheme.colors.textPrimary,
+                    fontWeight = FontWeight.Medium
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        TextButton(
+            onClick = onSkip,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Skip for now",
+                color = BuddysTheme.colors.textSecondary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.5.sp
+            )
+        }
     }
 }
