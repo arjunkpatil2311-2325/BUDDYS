@@ -38,7 +38,7 @@ class UpdateManager(private val context: Context) {
         private const val PREFS_NAME = "buddys_update_prefs"
         private const val KEY_LAST_CHECK = "last_check_timestamp"
         private const val KEY_CACHED_MANIFEST = "cached_update_manifest"
-        private const val CHECK_COOLDOWN_MS = 15 * 60 * 1000L // 15 minutes cooldown between checks
+        private const val CHECK_COOLDOWN_MS = 60 * 1000L // 1 minute cooldown between auto background checks
 
         @Volatile
         private var instance: UpdateManager? = null
@@ -111,9 +111,9 @@ class UpdateManager(private val context: Context) {
 
         Log.d(TAG, "[UPDATE CHECK START] force=$force, localVersion=${BuildConfig.VERSION_NAME} (code $currentVersionCode)")
 
-        if (!force && (now - lastCheck < CHECK_COOLDOWN_MS)) {
+        if (!force && (now - lastCheck < CHECK_COOLDOWN_MS) && _availableUpdate.value != null) {
             val cached = _availableUpdate.value
-            Log.d(TAG, "[UPDATE CHECK] Inside 15m cooldown window (${(now - lastCheck) / 1000}s elapsed). Active cached update: ${cached?.latestVersion ?: "none"}")
+            Log.d(TAG, "[UPDATE CHECK] Inside cooldown window (${(now - lastCheck) / 1000}s elapsed). Active cached update: ${cached?.latestVersion ?: "none"}")
             return@withContext cached
         }
 

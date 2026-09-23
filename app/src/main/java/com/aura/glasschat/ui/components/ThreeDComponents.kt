@@ -27,9 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -47,16 +45,15 @@ import com.aura.glasschat.ui.screens.HomeBottomTab
 import com.aura.glasschat.ui.theme.*
 
 // ====================================================================
-// BUDDYS 3D DESIGN SYSTEM — CORE TACTILE MODIFIERS & SURFACES
+// BUDDIES RETRO CARTOON COMPONENT IMPLEMENTATIONS
 // ====================================================================
 
 /**
- * Interactive 3D Press Scale with Spring Physics.
- * Scales down smoothly on press and bounces back instantly upon release.
+ * Subtle Cartoon Press Scale.
  */
 fun Modifier.threeDPress(
     enabled: Boolean = true,
-    targetScale: Float = 0.96f,
+    targetScale: Float = 0.97f,
     onClick: (() -> Unit)? = null
 ): Modifier = composed {
     val interactionSource = remember { MutableInteractionSource() }
@@ -67,7 +64,7 @@ fun Modifier.threeDPress(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
         ),
-        label = "threeDScale"
+        label = "pressScale"
     )
 
     this
@@ -85,12 +82,12 @@ fun Modifier.threeDPress(
 }
 
 /**
- * Minimal Clean Surface with subtle 1dp border and optional low elevation.
+ * Paper Surface with 1.5dp solid dark ink outline.
  */
 @Composable
 fun ThreeDSurface(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(14.dp),
+    shape: Shape = RoundedCornerShape(12.dp),
     backgroundColor: Color = BuddysTheme.colors.surface,
     borderColor: Color = BuddysTheme.colors.border,
     elevation: Dp = 0.dp,
@@ -98,31 +95,21 @@ fun ThreeDSurface(
 ) {
     Box(
         modifier = modifier
-            .then(
-                if (elevation > 0.dp) {
-                    Modifier.shadow(
-                        elevation = elevation,
-                        shape = shape,
-                        ambientColor = if (BuddysTheme.colors.isDark) Color.Black.copy(alpha = 0.4f) else Color(0x08000000),
-                        spotColor = if (BuddysTheme.colors.isDark) Color.Black.copy(alpha = 0.5f) else Color(0x10000000)
-                    )
-                } else Modifier
-            )
             .clip(shape)
             .background(backgroundColor)
-            .border(1.dp, borderColor, shape)
+            .border(1.5.dp, borderColor, shape)
     ) {
         content()
     }
 }
 
 /**
- * Minimal Clean Card with subtle tap feedback.
+ * Paper Card with tap feedback and 1.5dp ink outline.
  */
 @Composable
 fun ThreeDCard(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(14.dp),
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp),
     backgroundColor: Color = BuddysTheme.colors.surface,
     borderColor: Color = BuddysTheme.colors.border,
     elevation: Dp = 0.dp,
@@ -146,11 +133,11 @@ fun ThreeDCard(
 }
 
 // ====================================================================
-// 3D BUTTONS & CONTROLS
+// BUTTONS & CONTROLS
 // ====================================================================
 
 /**
- * Primary 3D Action Button (BUDDYS Red gradient with realistic depth & spring).
+ * Primary Illustrated Action Button (Orange fill + 1.5dp solid dark ink outline).
  */
 @Composable
 fun ThreeDButton(
@@ -160,10 +147,10 @@ fun ThreeDButton(
     enabled: Boolean = true,
     isLoading: Boolean = false,
     leadingIcon: ImageVector? = null,
-    containerColor: Color = BuddysTheme.colors.primaryRed,
+    containerColor: Color = BuddysTheme.colors.primaryAccent,
     contentColor: Color = BuddysTheme.colors.textOnPrimary,
-    elevation: Dp = 3.dp,
-    shape: RoundedCornerShape = RoundedCornerShape(14.dp)
+    elevation: Dp = 0.dp,
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp)
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -173,34 +160,15 @@ fun ThreeDButton(
         label = "btnScale"
     )
 
-    val currentElevation = if (isPressed) 1.dp else elevation
-
     Box(
         modifier = modifier
-            .height(50.dp)
+            .height(48.dp)
             .scale(scale)
-            .shadow(
-                elevation = if (enabled) currentElevation else 0.dp,
-                shape = shape,
-                ambientColor = containerColor.copy(alpha = 0.35f),
-                spotColor = containerColor.copy(alpha = 0.45f)
-            )
             .clip(shape)
-            .background(
-                if (enabled) {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            containerColor,
-                            containerColor.copy(alpha = 0.92f)
-                        )
-                    )
-                } else {
-                    SolidColor(containerColor.copy(alpha = 0.35f))
-                }
-            )
+            .background(if (enabled) containerColor else containerColor.copy(alpha = 0.4f))
             .border(
-                1.dp,
-                if (enabled) containerColor.copy(alpha = 0.8f) else Color.Transparent,
+                1.5.dp,
+                if (enabled) BuddysTheme.colors.border else BuddysTheme.colors.border.copy(alpha = 0.4f),
                 shape
             )
             .clickable(
@@ -221,7 +189,7 @@ fun ThreeDButton(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(horizontal = 20.dp)
+                modifier = Modifier.padding(horizontal = 18.dp)
             ) {
                 if (leadingIcon != null) {
                     Icon(
@@ -237,7 +205,6 @@ fun ThreeDButton(
                     style = MaterialTheme.typography.labelLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        letterSpacing = 0.3.sp,
                         color = if (enabled) contentColor else contentColor.copy(alpha = 0.6f)
                     )
                 )
@@ -247,7 +214,7 @@ fun ThreeDButton(
 }
 
 /**
- * Secondary Outlined 3D Button.
+ * Secondary Illustrated Outlined Button (Cream paper + 1.5dp dark ink outline).
  */
 @Composable
 fun ThreeDOutlinedButton(
@@ -258,7 +225,8 @@ fun ThreeDOutlinedButton(
     leadingIcon: ImageVector? = null,
     borderColor: Color = BuddysTheme.colors.border,
     textColor: Color = BuddysTheme.colors.textPrimary,
-    backgroundColor: Color = BuddysTheme.colors.surface
+    backgroundColor: Color = BuddysTheme.colors.surface,
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp)
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -272,14 +240,9 @@ fun ThreeDOutlinedButton(
         modifier = modifier
             .height(46.dp)
             .scale(scale)
-            .shadow(
-                elevation = if (isPressed) 0.5.dp else 1.5.dp,
-                shape = RoundedCornerShape(14.dp),
-                ambientColor = if (BuddysTheme.colors.isDark) Color.Black.copy(alpha = 0.4f) else Color(0x0C000000)
-            )
-            .clip(RoundedCornerShape(14.dp))
+            .clip(shape)
             .background(backgroundColor)
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+            .border(1.5.dp, borderColor, shape)
             .clickable(
                 enabled = enabled,
                 interactionSource = interactionSource,
@@ -291,7 +254,7 @@ fun ThreeDOutlinedButton(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 18.dp)
+            modifier = Modifier.padding(horizontal = 16.dp)
         ) {
             if (leadingIcon != null) {
                 Icon(
@@ -305,8 +268,8 @@ fun ThreeDOutlinedButton(
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
                     color = textColor
                 )
             )
@@ -315,7 +278,7 @@ fun ThreeDOutlinedButton(
 }
 
 /**
- * 3D Icon Button with circular depth surface.
+ * Illustrated Circular Icon Button with 1.5dp ink outline.
  */
 @Composable
 fun ThreeDIconButton(
@@ -328,7 +291,7 @@ fun ThreeDIconButton(
     containerColor: Color = BuddysTheme.colors.surface,
     tint: Color = BuddysTheme.colors.textPrimary,
     borderColor: Color = BuddysTheme.colors.border,
-    elevation: Dp = 1.5.dp
+    elevation: Dp = 0.dp
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -342,14 +305,9 @@ fun ThreeDIconButton(
         modifier = modifier
             .size(size)
             .scale(scale)
-            .shadow(
-                elevation = if (isPressed) 0.5.dp else elevation,
-                shape = CircleShape,
-                ambientColor = if (BuddysTheme.colors.isDark) Color.Black.copy(alpha = 0.5f) else Color(0x10000000)
-            )
             .clip(CircleShape)
             .background(containerColor)
-            .border(1.dp, borderColor, CircleShape)
+            .border(1.5.dp, borderColor, CircleShape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -367,7 +325,7 @@ fun ThreeDIconButton(
 }
 
 /**
- * 3D Floating Action Button (FAB) with soft glow depth.
+ * Illustrated Floating Action Button (FAB) with orange fill and 2dp ink border.
  */
 @Composable
 fun ThreeDFloatingButton(
@@ -375,7 +333,7 @@ fun ThreeDFloatingButton(
     icon: ImageVector,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    containerColor: Color = BuddysTheme.colors.primaryRed,
+    containerColor: Color = BuddysTheme.colors.primaryAccent,
     contentColor: Color = Color.White,
     size: Dp = 56.dp
 ) {
@@ -391,22 +349,9 @@ fun ThreeDFloatingButton(
         modifier = modifier
             .size(size)
             .scale(scale)
-            .shadow(
-                elevation = if (isPressed) 3.dp else 6.dp,
-                shape = CircleShape,
-                ambientColor = containerColor.copy(alpha = 0.4f),
-                spotColor = containerColor.copy(alpha = 0.5f)
-            )
             .clip(CircleShape)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        containerColor,
-                        containerColor.copy(alpha = 0.9f)
-                    )
-                )
-            )
-            .border(1.5.dp, containerColor.copy(alpha = 0.9f), CircleShape)
+            .background(containerColor)
+            .border(2.dp, BuddysTheme.colors.border, CircleShape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -424,11 +369,11 @@ fun ThreeDFloatingButton(
 }
 
 // ====================================================================
-// 3D TOP BAR & BOTTOM NAVIGATION
+// TOP BAR & BOTTOM NAVIGATION
 // ====================================================================
 
 /**
- * Clean Modern Social App Top Bar with subtle bottom divider.
+ * Illustrated Top Bar with bottom ink line.
  */
 @Composable
 fun ThreeDTopBar(
@@ -440,19 +385,19 @@ fun ThreeDTopBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = BuddysTheme.colors.surface,
-        border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
+        border = BorderStroke(1.5.dp, BuddysTheme.colors.border)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
+                .height(56.dp)
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBack != null) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(38.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -461,16 +406,16 @@ fun ThreeDTopBar(
                         modifier = Modifier.size(22.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
+                style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = BuddysTheme.colors.textPrimary,
-                    fontSize = 18.sp,
-                    letterSpacing = (-0.2).sp
+                    fontSize = 19.sp,
+                    letterSpacing = (-0.3).sp
                 ),
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
@@ -490,8 +435,7 @@ fun ThreeDTopBar(
 }
 
 /**
- * Modern Clean Social Bottom Navigation Bar (5 Tabs: Home, Search, Create, Inbox, Profile).
- * Retains double-tap profile switching.
+ * Illustrated 5-Tab Navigation Bar with Paper Background, Ink Top Border, and Yellow Highlights.
  */
 @Composable
 fun ThreeDBottomBar(
@@ -510,17 +454,17 @@ fun ThreeDBottomBar(
             .fillMaxWidth()
             .navigationBarsPadding(),
         color = BuddysTheme.colors.surface,
-        border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
+        border = BorderStroke(1.5.dp, BuddysTheme.colors.border)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .padding(horizontal = 4.dp),
+                .height(58.dp)
+                .padding(horizontal = 6.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // TAB 1: HOME (FEED & STORIES)
+            // TAB 1: HOME
             val isHome = selectedTab == HomeBottomTab.HOME
             ThreeDNavTabItem(
                 selected = isHome,
@@ -530,7 +474,7 @@ fun ThreeDBottomBar(
                 onClick = { onTabSelected(HomeBottomTab.HOME) }
             )
 
-            // TAB 2: SEARCH / EXPLORE
+            // TAB 2: SEARCH
             val isSearch = selectedTab == HomeBottomTab.SEARCH
             ThreeDNavTabItem(
                 selected = isSearch,
@@ -539,7 +483,7 @@ fun ThreeDBottomBar(
                 onClick = { onTabSelected(HomeBottomTab.SEARCH) }
             )
 
-            // TAB 3: CREATE (STORY & POST)
+            // TAB 3: CREATE
             val isCreate = selectedTab == HomeBottomTab.CREATE
             ThreeDNavTabItem(
                 selected = isCreate,
@@ -548,7 +492,7 @@ fun ThreeDBottomBar(
                 onClick = { onTabSelected(HomeBottomTab.CREATE) }
             )
 
-            // TAB 4: INBOX (DIRECT MESSAGES)
+            // TAB 4: INBOX
             val isInbox = selectedTab == HomeBottomTab.INBOX
             ThreeDNavTabItem(
                 selected = isInbox,
@@ -586,8 +530,8 @@ private fun RowScope.ThreeDNavTabItem(
     onDoubleClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
-    val activeColor = BuddysTheme.colors.primaryRed
-    val inactiveColor = BuddysTheme.colors.textPrimary
+    val activeBg = BuddysTheme.colors.yellowHeader
+    val iconColor = BuddysTheme.colors.textPrimary
 
     Box(
         modifier = Modifier
@@ -599,15 +543,26 @@ private fun RowScope.ThreeDNavTabItem(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .then(
+                    if (selected) Modifier
+                        .background(activeBg)
+                        .border(1.2.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                    else Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
             if (avatarUrl != null || (avatarName != null && selected)) {
                 Box(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
                         .border(
-                            if (selected) 2.dp else 1.dp,
-                            if (selected) activeColor else BuddysTheme.colors.border,
+                            1.5.dp,
+                            BuddysTheme.colors.border,
                             CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -622,8 +577,8 @@ private fun RowScope.ThreeDNavTabItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = label,
-                    tint = if (selected) activeColor else inactiveColor,
-                    modifier = Modifier.size(25.dp)
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
@@ -633,7 +588,8 @@ private fun RowScope.ThreeDNavTabItem(
                         .align(Alignment.TopEnd)
                         .offset(x = 8.dp, y = (-4).dp)
                         .clip(CircleShape)
-                        .background(activeColor)
+                        .background(BuddysTheme.colors.primaryAccent)
+                        .border(1.dp, BuddysTheme.colors.border, CircleShape)
                         .padding(horizontal = 4.5.dp, vertical = 1.dp)
                 ) {
                     Text(
@@ -650,9 +606,10 @@ private fun RowScope.ThreeDNavTabItem(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 4.dp, y = (-2).dp)
-                        .size(7.dp)
+                        .size(8.dp)
                         .clip(CircleShape)
-                        .background(activeColor)
+                        .background(BuddysTheme.colors.primaryAccent)
+                        .border(1.dp, BuddysTheme.colors.border, CircleShape)
                 )
             }
         }
@@ -660,11 +617,11 @@ private fun RowScope.ThreeDNavTabItem(
 }
 
 // ====================================================================
-// 3D TABS & SEGMENTED PILLS
+// TABS & SEGMENTED PILLS
 // ====================================================================
 
 /**
- * 3D Segmented Tab Pill with tactile depth.
+ * Illustrated Segmented Tab Pill with Paper & Ink border.
  */
 @Composable
 fun ThreeDTabPill(
@@ -687,28 +644,15 @@ fun ThreeDTabPill(
     Box(
         modifier = modifier
             .scale(scale)
-            .shadow(
-                elevation = if (isSelected) 2.dp else 0.5.dp,
-                shape = RoundedCornerShape(20.dp),
-                ambientColor = if (isSelected) BuddysTheme.colors.primaryRed.copy(alpha = 0.25f) else Color.Transparent
-            )
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(
-                if (isSelected) {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            BuddysTheme.colors.textPrimary,
-                            BuddysTheme.colors.textPrimary.copy(alpha = 0.9f)
-                        )
-                    )
-                } else {
-                    SolidColor(BuddysTheme.colors.surfaceSecondary)
-                }
+                if (isSelected) BuddysTheme.colors.yellowHeader
+                else BuddysTheme.colors.surfaceSecondary
             )
             .border(
-                1.dp,
-                if (isSelected) BuddysTheme.colors.textPrimary else BuddysTheme.colors.border,
-                RoundedCornerShape(20.dp)
+                1.5.dp,
+                BuddysTheme.colors.border,
+                RoundedCornerShape(10.dp)
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -726,16 +670,16 @@ fun ThreeDTabPill(
                 Icon(
                     imageVector = leadingIcon,
                     contentDescription = null,
-                    tint = if (isSelected) BuddysTheme.colors.surface else BuddysTheme.colors.textPrimary,
-                    modifier = Modifier.size(14.dp)
+                    tint = BuddysTheme.colors.textPrimary,
+                    modifier = Modifier.size(15.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(5.dp))
             }
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                    color = if (isSelected) BuddysTheme.colors.surface else BuddysTheme.colors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    color = BuddysTheme.colors.textPrimary,
                     fontSize = 13.sp
                 )
             )
@@ -747,15 +691,16 @@ fun ThreeDTabPill(
                 Spacer(modifier = Modifier.width(6.dp))
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (isSelected) BuddysTheme.colors.primaryRed else BuddysTheme.colors.primaryRed.copy(alpha = 0.15f))
-                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(BuddysTheme.colors.primaryAccent)
+                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 5.dp, vertical = 1.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = if (count > 99) "99+" else count.toString(),
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (isSelected) BuddysTheme.colors.textOnPrimary else BuddysTheme.colors.primaryRed,
+                            color = BuddysTheme.colors.textOnPrimary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -767,21 +712,21 @@ fun ThreeDTabPill(
 }
 
 // ====================================================================
-// 3D CHAT BUBBLES
+// CHAT BUBBLES
 // ====================================================================
 
 /**
- * 3D Chat Message Bubble with realistic depth bevel and distinct incoming/outgoing styling.
+ * Illustrated Paper Chat Bubble with 1.5dp dark ink outline.
  */
 @Composable
 fun ThreeDChatBubble(
     isOutgoing: Boolean,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(
-        topStart = 16.dp,
-        topEnd = 16.dp,
-        bottomStart = if (isOutgoing) 16.dp else 4.dp,
-        bottomEnd = if (isOutgoing) 4.dp else 16.dp
+        topStart = 14.dp,
+        topEnd = 14.dp,
+        bottomStart = if (isOutgoing) 14.dp else 4.dp,
+        bottomEnd = if (isOutgoing) 4.dp else 14.dp
     ),
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -791,33 +736,22 @@ fun ThreeDChatBubble(
         BuddysTheme.colors.bubbleIncoming
     }
 
-    val borderColor = if (isOutgoing) {
-        BuddysTheme.colors.primaryRed.copy(alpha = 0.85f)
-    } else {
-        BuddysTheme.colors.border
-    }
-
     Box(
         modifier = modifier
-            .shadow(
-                elevation = 1.5.dp,
-                shape = shape,
-                ambientColor = if (isOutgoing) BuddysTheme.colors.primaryRed.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.1f)
-            )
             .clip(shape)
             .background(bgColor)
-            .border(1.dp, borderColor, shape)
+            .border(1.5.dp, BuddysTheme.colors.border, shape)
     ) {
         content()
     }
 }
 
 // ====================================================================
-// 3D AVATAR & STORY RINGS
+// AVATAR
 // ====================================================================
 
 /**
- * 3D Avatar View with depth border and presence indicators.
+ * Illustrated Avatar View with 1.5dp dark ink outline.
  */
 @Composable
 fun ThreeDAvatar(
@@ -826,7 +760,7 @@ fun ThreeDAvatar(
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
     isOnline: Boolean = false,
-    elevation: Dp = 2.dp,
+    elevation: Dp = 0.dp,
     onClick: (() -> Unit)? = null
 ) {
     val initial = displayName.trim().firstOrNull()?.uppercase() ?: "?"
@@ -839,12 +773,8 @@ fun ThreeDAvatar(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .shadow(
-                    elevation = elevation,
-                    shape = CircleShape,
-                    ambientColor = if (BuddysTheme.colors.isDark) Color.Black.copy(alpha = 0.5f) else Color(0x15000000)
-                )
                 .clip(CircleShape)
+                .background(BuddysTheme.colors.surfaceSecondary)
                 .border(1.5.dp, BuddysTheme.colors.border, CircleShape)
         ) {
             if (!imageUrl.isNullOrBlank()) {
@@ -858,14 +788,14 @@ fun ThreeDAvatar(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(BuddysTheme.colors.surfaceSecondary),
+                        .background(BuddysTheme.colors.yellowHeader),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = initial,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = BuddysTheme.colors.primaryRed,
+                            fontWeight = FontWeight.Black,
+                            color = BuddysTheme.colors.textPrimary,
                             fontSize = (size.value * 0.42f).sp
                         )
                     )
@@ -879,7 +809,7 @@ fun ThreeDAvatar(
                     .size((size.value * 0.28f).coerceAtLeast(11f).dp)
                     .clip(CircleShape)
                     .background(BuddysTheme.colors.success)
-                    .border(2.dp, BuddysTheme.colors.surface, CircleShape)
+                    .border(1.5.dp, BuddysTheme.colors.border, CircleShape)
                     .align(Alignment.BottomEnd)
             )
         }
@@ -887,11 +817,11 @@ fun ThreeDAvatar(
 }
 
 // ====================================================================
-// 3D INPUT TEXT FIELD
+// INPUT TEXT FIELD
 // ====================================================================
 
 /**
- * 3D Elevated Input Text Field.
+ * Illustrated Input Text Field with 1.5dp ink outline.
  */
 @Composable
 fun ThreeDTextField(
@@ -913,19 +843,14 @@ fun ThreeDTextField(
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
-            .shadow(
-                elevation = if (isFocused) 2.5.dp else 1.dp,
-                shape = RoundedCornerShape(14.dp),
-                ambientColor = if (isFocused) BuddysTheme.colors.primaryRed.copy(alpha = 0.2f) else Color.Transparent
-            )
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(BuddysTheme.colors.surface)
             .border(
                 1.5.dp,
                 if (isError) BuddysTheme.colors.error
-                else if (isFocused) BuddysTheme.colors.primaryRed
+                else if (isFocused) BuddysTheme.colors.primaryAccent
                 else BuddysTheme.colors.border,
-                RoundedCornerShape(14.dp)
+                RoundedCornerShape(12.dp)
             )
             .padding(horizontal = 14.dp),
         contentAlignment = Alignment.CenterStart
@@ -938,7 +863,7 @@ fun ThreeDTextField(
                 Icon(
                     imageVector = leadingIcon,
                     contentDescription = null,
-                    tint = if (isFocused) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary,
+                    tint = if (isFocused) BuddysTheme.colors.primaryAccent else BuddysTheme.colors.textSecondary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
@@ -962,13 +887,14 @@ fun ThreeDTextField(
                         .onFocusChanged { isFocused = it.isFocused },
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         color = BuddysTheme.colors.textPrimary,
-                        fontSize = 14.5.sp
+                        fontSize = 14.5.sp,
+                        fontWeight = FontWeight.Medium
                     ),
                     singleLine = singleLine,
                     keyboardOptions = keyboardOptions,
                     keyboardActions = keyboardActions,
                     visualTransformation = visualTransformation,
-                    cursorBrush = SolidColor(BuddysTheme.colors.primaryRed)
+                    cursorBrush = SolidColor(BuddysTheme.colors.primaryAccent)
                 )
             }
 
@@ -980,11 +906,11 @@ fun ThreeDTextField(
 }
 
 // ====================================================================
-// 3D LIST ROW & SETTINGS ITEM
+// LIST ROW & SETTINGS ITEM
 // ====================================================================
 
 /**
- * 3D Elevated List Row Item with micro-depth and bouncy press.
+ * Illustrated List Row Item with 1.5dp dark ink outline.
  */
 @Composable
 fun ThreeDListItem(
@@ -995,15 +921,14 @@ fun ThreeDListItem(
     leadingIcon: ImageVector? = null,
     trailingIcon: ImageVector? = Icons.AutoMirrored.Filled.ArrowBack,
     trailingContent: (@Composable () -> Unit)? = null,
-    iconTint: Color = BuddysTheme.colors.primaryRed,
+    iconTint: Color = BuddysTheme.colors.primaryAccent,
     textColor: Color = BuddysTheme.colors.textPrimary,
     badgeText: String? = null
 ) {
     ThreeDCard(
         modifier = modifier.fillMaxWidth(),
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        elevation = 1.dp
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -1017,7 +942,7 @@ fun ThreeDListItem(
                         .size(38.dp)
                         .clip(CircleShape)
                         .background(BuddysTheme.colors.surfaceSecondary)
-                        .border(1.dp, BuddysTheme.colors.border, CircleShape),
+                        .border(1.2.dp, BuddysTheme.colors.border, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -1035,7 +960,7 @@ fun ThreeDListItem(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
                             color = textColor,
                             fontSize = 15.sp
                         )
@@ -1044,8 +969,9 @@ fun ThreeDListItem(
                         Spacer(modifier = Modifier.width(6.dp))
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(BuddysTheme.colors.primaryRed)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(BuddysTheme.colors.primaryAccent)
+                                .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(6.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(

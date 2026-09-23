@@ -391,7 +391,7 @@ fun HomeScreen(
                                         authorHandle = "buddies_app",
                                         authorAvatarUrl = null,
                                         timeAgo = "Just now",
-                                        caption = "Welcome to Buddies v0.4.2 ✨ Fast, private, and beautifully organized moments with your closest friends.",
+                                        caption = "Welcome to Buddies v0.4.8 ✨ Fast, private, and beautifully organized moments with your closest friends.",
                                         likeCount = if (likedMoments.contains("welcome_post")) 43 else 42,
                                         commentCount = 5,
                                         isLiked = likedMoments.contains("welcome_post"),
@@ -1418,7 +1418,7 @@ private fun SearchUserRow(
 }
 
 // ====================================================================
-// TOP BUDDYS HEADER (SNAPCHAT STYLE: [Avatar] [⌕]  Chat  [🔔] [👤+] [⋮])
+// TOP BUDDYS HEADER (RETRO CARTOON YELLOW BLOCK / PAPER HEADER)
 // ====================================================================
 @Composable
 private fun TopBuddysHeader(
@@ -1433,22 +1433,22 @@ private fun TopBuddysHeader(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = BuddysTheme.colors.surface,
-        border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
+        color = BuddysTheme.colors.surfaceHeader,
+        border = BorderStroke(1.5.dp, BuddysTheme.colors.border)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
+                .height(56.dp)
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left: Brand Wordmark
+            // Left: Brand Wordmark & Mascot
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                BuddysSpiderEmblem(size = 22.dp, tint = BuddysTheme.colors.primaryRed)
+                BuddysSpiderEmblem(size = 26.dp, tint = BuddysTheme.colors.textPrimary)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Buddies",
@@ -1461,55 +1461,70 @@ private fun TopBuddysHeader(
                 )
             }
 
-            // Right Action Cluster: Notifications, Search, Add Friend
+            // Right Action Cluster: Search, Notifications, Add Friend
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(
-                    onClick = onSearchClick,
-                    modifier = Modifier.size(38.dp)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(BuddysTheme.colors.surface)
+                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
+                        .clickable(onClick = onSearchClick),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Search",
                         tint = BuddysTheme.colors.textPrimary,
-                        modifier = Modifier.size(23.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Box(contentAlignment = Alignment.TopEnd) {
-                    IconButton(
-                        onClick = onActivityClick,
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FavoriteBorder,
-                            contentDescription = "Activity",
-                            tint = BuddysTheme.colors.textPrimary,
-                            modifier = Modifier.size(23.dp)
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(BuddysTheme.colors.surface)
+                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
+                        .clickable(onClick = onActivityClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FavoriteBorder,
+                        contentDescription = "Activity",
+                        tint = BuddysTheme.colors.textPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
                     if (unreadNotificationCount > 0) {
                         Box(
                             modifier = Modifier
-                                .offset(x = (-4).dp, y = 6.dp)
-                                .size(8.dp)
+                                .align(Alignment.TopEnd)
+                                .offset(x = 2.dp, y = (-2).dp)
+                                .size(9.dp)
                                 .clip(CircleShape)
                                 .background(BuddysTheme.colors.primaryRed)
+                                .border(1.dp, BuddysTheme.colors.border, CircleShape)
                         )
                     }
                 }
 
-                IconButton(
-                    onClick = onAddFriendClick,
-                    modifier = Modifier.size(38.dp)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(BuddysTheme.colors.primaryRed)
+                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
+                        .clickable(onClick = onAddFriendClick),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.PersonAdd,
                         contentDescription = "Add Buddy",
-                        tint = BuddysTheme.colors.textPrimary,
-                        modifier = Modifier.size(22.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp)
                     )
                 }
             }
@@ -1910,151 +1925,158 @@ private fun PremiumChatRow(
 
     val timeFormatted = ChatUtils.formatSnapchatTime(chat.lastMessageTimestamp)
 
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
-            .background(if (hasUnread) BuddysTheme.colors.surfaceSecondary.copy(alpha = 0.5f) else Color.Transparent)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = if (hasUnread) BuddysTheme.colors.surfaceElevated else BuddysTheme.colors.surface,
+        border = BorderStroke(1.5.dp, BuddysTheme.colors.border)
     ) {
-        // 1. 3D Avatar with Story Ring / Bitmoji styling
-        Box(
+        Row(
             modifier = Modifier
-                .size(50.dp)
-                .then(
-                    if (hasActiveStory) Modifier.border(2.dp, StoryRingGradient, CircleShape).padding(2.dp)
-                    else Modifier
-                )
-                .clip(CircleShape)
+                .fillMaxWidth()
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = { onAvatarLongClick?.invoke() ?: onLongClick() }
-                ),
-            contentAlignment = Alignment.Center
+                    onLongClick = onLongClick
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            ThreeDAvatar(
-                imageUrl = otherInfo.avatarUrl,
-                displayName = otherInfo.displayName,
-                size = 46.dp,
-                isOnline = false
+            // 1. Avatar with Story Ring / Outline styling
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .then(
+                        if (hasActiveStory) Modifier.border(2.dp, StoryRingGradient, CircleShape).padding(2.dp)
+                        else Modifier
+                    )
+                    .clip(CircleShape)
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = { onAvatarLongClick?.invoke() ?: onLongClick() }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                ThreeDAvatar(
+                    imageUrl = otherInfo.avatarUrl,
+                    displayName = otherInfo.displayName,
+                    size = 46.dp,
+                    isOnline = false
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // 2. Center Text Column (Name + Streak, Subtitle Delivery Status)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Top Line: Display Name + Emoji / Streak indicator
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = otherInfo.displayName,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.SemiBold,
+                            color = BuddysTheme.colors.textPrimary,
+                            fontSize = 15.5.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    // Pinned Indicator
+                    if (isPinned) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Bookmark,
+                            contentDescription = "Pinned",
+                            tint = BuddysTheme.colors.primaryRed,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+
+                    // Locked Indicator
+                    if (isLocked) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Locked",
+                            tint = BuddysTheme.colors.primaryRed,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+
+                    // Muted Indicator
+                    if (isMuted) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.NotificationsNone,
+                            contentDescription = "Muted",
+                            tint = BuddysTheme.colors.textMuted,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Bottom Line: Delivery Icon + Status Text + Time + Streak
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    BuddysChatStatusIcon(
+                        type = deliveryType,
+                        size = 11.dp
+                    )
+
+                    Spacer(modifier = Modifier.width(5.dp))
+
+                    Text(
+                        text = statusLabel,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = if (hasUnread) BuddysTheme.colors.textPrimary else BuddysTheme.colors.textSecondary,
+                            fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 13.sp
+                        )
+                    )
+
+                    Text(
+                        text = " · ",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = BuddysTheme.colors.textMuted,
+                            fontSize = 13.sp
+                        )
+                    )
+
+                    Text(
+                        text = timeFormatted,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = BuddysTheme.colors.textMuted,
+                            fontSize = 12.5.sp
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 3. Right Quick Action: Camera Snap Button [📷]
+            ThreeDIconButton(
+                onClick = onCameraClick,
+                icon = Icons.Outlined.PhotoCamera,
+                contentDescription = "Quick Snap",
+                size = 36.dp,
+                iconSize = 17.dp,
+                containerColor = BuddysTheme.colors.surfaceSecondary,
+                tint = BuddysTheme.colors.textSecondary
             )
         }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // 2. Center Text Column (Name + Streak, Subtitle Delivery Status)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Top Line: Display Name + Emoji / Streak indicator
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = otherInfo.displayName,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.SemiBold,
-                        color = BuddysTheme.colors.textPrimary,
-                        fontSize = 15.5.sp
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                // Pinned Indicator
-                if (isPinned) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.Bookmark,
-                        contentDescription = "Pinned",
-                        tint = BuddysTheme.colors.primaryRed,
-                        modifier = Modifier.size(13.dp)
-                    )
-                }
-
-                // Locked Indicator
-                if (isLocked) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Locked",
-                        tint = BuddysTheme.colors.primaryRed,
-                        modifier = Modifier.size(13.dp)
-                    )
-                }
-
-                // Muted Indicator
-                if (isMuted) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.NotificationsNone,
-                        contentDescription = "Muted",
-                        tint = BuddysTheme.colors.textMuted,
-                        modifier = Modifier.size(13.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            // Bottom Line: Delivery Icon + Status Text + Time + Streak
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                BuddysChatStatusIcon(
-                    type = deliveryType,
-                    size = 11.dp
-                )
-
-                Spacer(modifier = Modifier.width(5.dp))
-
-                Text(
-                    text = statusLabel,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = if (hasUnread) BuddysTheme.colors.textPrimary else BuddysTheme.colors.textSecondary,
-                        fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 13.sp
-                    )
-                )
-
-                Text(
-                    text = " · ",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = BuddysTheme.colors.textMuted,
-                        fontSize = 13.sp
-                    )
-                )
-
-                Text(
-                    text = timeFormatted,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = BuddysTheme.colors.textMuted,
-                        fontSize = 12.5.sp
-                    )
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // 3. Right Quick Action: 3D Camera Snap Button [📷]
-        ThreeDIconButton(
-            onClick = onCameraClick,
-            icon = Icons.Outlined.PhotoCamera,
-            contentDescription = "Quick Snap",
-            size = 36.dp,
-            iconSize = 17.dp,
-            containerColor = BuddysTheme.colors.surfaceSecondary.copy(alpha = 0.7f),
-            tint = BuddysTheme.colors.textSecondary
-        )
     }
 }
 

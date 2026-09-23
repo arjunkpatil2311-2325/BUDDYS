@@ -349,7 +349,7 @@ private fun KeypadButton(
             .size(68.dp)
             .clip(CircleShape)
             .background(BuddysTheme.colors.surface)
-            .border(1.dp, BuddysTheme.colors.border, CircleShape)
+            .border(1.5.dp, BuddysTheme.colors.border, CircleShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(bounded = true, color = BuddysTheme.colors.primaryRed.copy(alpha = 0.2f)),

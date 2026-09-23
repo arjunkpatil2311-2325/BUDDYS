@@ -279,14 +279,19 @@ fun BuddysFullProfileView(
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = BuddysTheme.colors.surfaceHeader,
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, BuddysTheme.colors.border)
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             if (onBack != null) {
                 IconButton(
                     onClick = onBack,
@@ -354,17 +359,17 @@ fun BuddysFullProfileView(
                 )
             }
 
-            // Right: Settings / Menu
-            IconButton(
-                onClick = onOpenPrivacySettings,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Settings",
-                    tint = BuddysTheme.colors.textPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
+                IconButton(
+                    onClick = onOpenPrivacySettings,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Settings",
+                        tint = BuddysTheme.colors.textPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
 

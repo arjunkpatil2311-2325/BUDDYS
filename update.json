@@ -1,31 +1,30 @@
 {
-  "latestVersion": "0.4.7",
-  "versionCode": 11,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.7/app-universal-debug.apk",
+  "latestVersion": "0.4.8",
+  "versionCode": 12,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.8/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
   "fileSize": "49.9 MB",
   "abis": {
     "arm64-v8a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.7/app-arm64-v8a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.8/app-arm64-v8a-debug.apk",
       "apkFileName": "app-arm64-v8a-debug.apk",
       "fileSize": "20.0 MB"
     },
     "armeabi-v7a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.7/app-armeabi-v7a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.8/app-armeabi-v7a-debug.apk",
       "apkFileName": "app-armeabi-v7a-debug.apk",
       "fileSize": "16.7 MB"
     }
   },
-  "releaseDate": "2026-09-21",
+  "releaseDate": "2026-09-23",
   "releaseNotes": [
-    "Story 404 / expired signed URL resolution fix",
-    "Instagram-style Story Studio",
-    "Pinch, zoom, pan & rotate photo editing",
-    "Resizable, rotatable & movable text overlays",
-    "Rich typography styles (Classic, Modern, Strong, Typewriter, Minimal, Neon) & alignment",
-    "Interactive stickers (Polls, Questions, Location, Time, Mentions, Emojis)",
-    "Local Story Drafts with auto-save, resume & discard",
-    "Performance and stability enhancements"
+    "Complete Retro Cartoon Paper & Ink UI redesign",
+    "Warm paper, yellow and orange visual system",
+    "Hand-drawn inspired buttons, icons and outlines",
+    "Redesigned Home, Search, Profile, Inbox and Chat",
+    "Redesigned Settings, App Lock and other screens",
+    "Improved visual consistency across Buddies",
+    "Performance and stability improvements"
   ],
   "isMandatory": false,
   "minimumSupportedVersionCode": 1

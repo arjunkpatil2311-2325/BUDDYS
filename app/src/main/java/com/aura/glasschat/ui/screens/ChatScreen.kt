@@ -178,9 +178,9 @@ fun ChatScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp)
-                    .background(BuddysTheme.colors.surface)
+                    .background(BuddysTheme.colors.surfaceHeader)
                     .border(
-                        androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border),
+                        androidx.compose.foundation.BorderStroke(1.5.dp, BuddysTheme.colors.border),
                         RoundedCornerShape(bottomStart = 0.dp, bottomEnd = 0.dp)
                     )
             ) {
@@ -2321,16 +2321,16 @@ fun NostalgicMessageItem(
                 }
 
                 val highlightBorderWidth by animateDpAsState(
-                    targetValue = if (isHighlighted) 2.dp else 1.dp,
+                    targetValue = if (isHighlighted) 2.5.dp else 1.5.dp,
                     animationSpec = tween(300),
                     label = "highlightBorder"
                 )
 
-                val outgoingBubbleColor = if (BuddysTheme.colors.isDark) Color(0xFFC71D25) else BuddysTheme.colors.primaryRed
+                val outgoingBubbleColor = BuddysTheme.colors.primaryRed
                 val incomingBubbleColor = if (hasWallpaper) {
-                    if (BuddysTheme.colors.isDark) Color(0xFF161820).copy(alpha = 0.95f) else Color(0xFFFFFFFF).copy(alpha = 0.95f)
+                    BuddysTheme.colors.surface.copy(alpha = 0.95f)
                 } else {
-                    if (BuddysTheme.colors.isDark) Color(0xFF161820) else Color(0xFFF1F3F7)
+                    BuddysTheme.colors.surface
                 }
 
                 val bubbleShape = if (message.isMissedCallMessage) {
@@ -2360,11 +2360,10 @@ fun NostalgicMessageItem(
                         .border(
                             width = highlightBorderWidth,
                             color = when {
-                                message.isMissedCallMessage -> Color(0xFFE5454C).copy(alpha = 0.4f)
+                                message.isMissedCallMessage -> Color(0xFFE5454C).copy(alpha = 0.8f)
                                 isHighlighted -> BuddysTheme.colors.primaryRed
-                                message.isUnsent -> BuddysTheme.colors.softRed.copy(alpha = 0.6f)
-                                isOutgoing -> Color.Transparent
-                                else -> if (BuddysTheme.colors.isDark) Color(0xFF232632) else Color(0xFFE2E4EB)
+                                message.isUnsent -> BuddysTheme.colors.border.copy(alpha = 0.6f)
+                                else -> BuddysTheme.colors.border
                             },
                             shape = bubbleShape
                         )

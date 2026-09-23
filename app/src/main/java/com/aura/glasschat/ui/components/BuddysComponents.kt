@@ -1,9 +1,11 @@
 package com.aura.glasschat.ui.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,47 +22,46 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.aura.glasschat.ui.theme.*
 
 // ====================================================================
-// BUDDYS PREMIUM COMPONENT SYSTEM
+// BUDDIES RETRO CARTOON COMPONENT SYSTEM — PAPER & INK
 // ====================================================================
 
 /**
- * Standard 3D Surface Card (14dp rounded corners, 1dp border, subtle surface elevation).
+ * Illustrated Paper Surface Card with bold 1.5dp ink outline and flat paper fill.
  */
 @Composable
 fun BuddysCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = BuddysTheme.colors.surface,
     borderColor: Color = BuddysTheme.colors.border,
-    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
-    elevation: Dp = 1.5.dp,
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp),
+    borderWidth: Dp = 1.5.dp,
+    elevation: Dp = 0.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
-    ThreeDSurface(
-        modifier = modifier,
-        shape = shape,
-        backgroundColor = backgroundColor,
-        borderColor = borderColor,
-        elevation = elevation,
-        content = content
-    )
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(backgroundColor)
+            .border(borderWidth, borderColor, shape)
+    ) {
+        content()
+    }
 }
 
 /**
- * Primary Brand Action Button (BUDDYS Red 3D button).
+ * Primary Illustrated Action Button (Orange fill + 1.5dp dark ink outline).
  */
 @Composable
 fun BuddysButton(
@@ -70,8 +71,10 @@ fun BuddysButton(
     enabled: Boolean = true,
     isLoading: Boolean = false,
     leadingIcon: ImageVector? = null,
-    containerColor: Color = BuddysTheme.colors.primaryRed,
-    contentColor: Color = BuddysTheme.colors.textOnPrimary
+    containerColor: Color = BuddysTheme.colors.primaryAccent,
+    contentColor: Color = BuddysTheme.colors.textOnPrimary,
+    borderColor: Color = BuddysTheme.colors.border,
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp)
 ) {
     ThreeDButton(
         text = text,
@@ -81,12 +84,13 @@ fun BuddysButton(
         isLoading = isLoading,
         leadingIcon = leadingIcon,
         containerColor = containerColor,
-        contentColor = contentColor
+        contentColor = contentColor,
+        shape = shape
     )
 }
 
 /**
- * Secondary Outlined 3D Button.
+ * Secondary Illustrated Outlined Button (Cream/White paper + 1.5dp dark ink outline).
  */
 @Composable
 fun BuddysOutlinedButton(
@@ -96,7 +100,9 @@ fun BuddysOutlinedButton(
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
     borderColor: Color = BuddysTheme.colors.border,
-    textColor: Color = BuddysTheme.colors.textPrimary
+    textColor: Color = BuddysTheme.colors.textPrimary,
+    backgroundColor: Color = BuddysTheme.colors.surface,
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp)
 ) {
     ThreeDOutlinedButton(
         text = text,
@@ -105,12 +111,13 @@ fun BuddysOutlinedButton(
         enabled = enabled,
         leadingIcon = leadingIcon,
         borderColor = borderColor,
-        textColor = textColor
+        textColor = textColor,
+        backgroundColor = backgroundColor
     )
 }
 
 /**
- * Standard Header Top Bar with 3D depth rim.
+ * Illustrated Paper Header Top Bar with bold bottom ink divider.
  */
 @Composable
 fun BuddysTopBar(
@@ -128,7 +135,7 @@ fun BuddysTopBar(
 }
 
 /**
- * Clean Section Header with Optional Action Link.
+ * Illustrated Section Header with optional Yellow Accent Tag.
  */
 @Composable
 fun BuddysSectionHeader(
@@ -146,28 +153,37 @@ fun BuddysSectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp,
-                    color = BuddysTheme.colors.textSecondary,
-                    fontSize = 12.5.sp
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(BuddysTheme.colors.yellowHeader)
+                    .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = title.uppercase(),
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp,
+                        color = BuddysTheme.colors.textPrimary,
+                        fontSize = 12.sp
+                    )
                 )
-            )
+            }
             if (badgeText != null) {
                 Spacer(modifier = Modifier.width(6.dp))
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(6.dp))
                         .background(BuddysTheme.colors.surfaceSecondary)
+                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(6.dp))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = badgeText,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = BuddysTheme.colors.textSecondary,
+                            color = BuddysTheme.colors.textPrimary,
                             fontSize = 10.sp
                         )
                     )
@@ -179,8 +195,8 @@ fun BuddysSectionHeader(
             Text(
                 text = actionText,
                 style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    color = BuddysTheme.colors.primaryRed,
+                    fontWeight = FontWeight.Bold,
+                    color = BuddysTheme.colors.primaryAccent,
                     fontSize = 13.sp
                 ),
                 modifier = Modifier.clickable { onActionClick() }
@@ -190,23 +206,23 @@ fun BuddysSectionHeader(
 }
 
 /**
- * Clean Modern Search Input Field.
+ * Illustrated Outlined Search Box (Yellow / Cream fill + 1.5dp ink outline).
  */
 @Composable
 fun BuddysSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    placeholder: String = "Search...",
+    placeholder: String = "Search people, posts, topics...",
     modifier: Modifier = Modifier,
     onSearchClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(46.dp)
+            .height(48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(BuddysTheme.colors.surfaceSecondary)
-            .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
+            .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
             .then(if (onSearchClick != null) Modifier.clickable { onSearchClick() } else Modifier)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -214,8 +230,8 @@ fun BuddysSearchBar(
         Icon(
             imageVector = Icons.Default.Search,
             contentDescription = "Search",
-            tint = BuddysTheme.colors.textSecondary,
-            modifier = Modifier.size(18.dp)
+            tint = BuddysTheme.colors.textPrimary,
+            modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(10.dp))
         if (onSearchClick != null) {
@@ -223,7 +239,8 @@ fun BuddysSearchBar(
                 text = if (query.isBlank()) placeholder else query,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = if (query.isBlank()) BuddysTheme.colors.textMuted else BuddysTheme.colors.textPrimary,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
                 ),
                 modifier = Modifier.weight(1f)
             )
@@ -234,7 +251,8 @@ fun BuddysSearchBar(
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(
                     color = BuddysTheme.colors.textPrimary,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
                 ),
                 modifier = Modifier.weight(1f),
                 decorationBox = { innerTextField ->
@@ -259,7 +277,7 @@ fun BuddysSearchBar(
                 Icon(
                     imageVector = Icons.Default.Clear,
                     contentDescription = "Clear",
-                    tint = BuddysTheme.colors.textSecondary,
+                    tint = BuddysTheme.colors.textPrimary,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -268,7 +286,7 @@ fun BuddysSearchBar(
 }
 
 /**
- * Typography-led, Non-Cartoon Empty State.
+ * Illustrated Empty State for Notebook Pages.
  */
 @Composable
 fun BuddysEmptyState(
@@ -288,17 +306,17 @@ fun BuddysEmptyState(
         if (icon != null) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(60.dp)
                     .clip(CircleShape)
-                    .background(BuddysTheme.colors.surfaceSecondary)
-                    .border(1.dp, BuddysTheme.colors.border, CircleShape),
+                    .background(BuddysTheme.colors.yellowHeader)
+                    .border(1.5.dp, BuddysTheme.colors.border, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = BuddysTheme.colors.primaryRed,
-                    modifier = Modifier.size(26.dp)
+                    tint = BuddysTheme.colors.textPrimary,
+                    modifier = Modifier.size(28.dp)
                 )
             }
         } else {
@@ -312,7 +330,7 @@ fun BuddysEmptyState(
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = BuddysTheme.colors.textPrimary,
-                fontSize = 17.sp
+                fontSize = 18.sp
             ),
             textAlign = TextAlign.Center
         )
@@ -342,7 +360,7 @@ fun BuddysEmptyState(
 }
 
 /**
- * Story Ring for active stories (Instagram + Snapchat hybrid with dual-gradient ring).
+ * Illustrated Hand-Drawn Story Ring with 2dp ink border & yellow/orange accent.
  */
 @Composable
 fun BuddysStoryRing(
@@ -357,27 +375,19 @@ fun BuddysStoryRing(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .then(
-                if (hasUnreadStory) {
-                    Modifier.border(
-                        BorderStroke(2.5.dp, StoryRingGradient),
-                        CircleShape
-                    )
-                } else {
-                    Modifier.border(
-                        BorderStroke(1.dp, BuddysTheme.colors.border),
-                        CircleShape
-                    )
-                }
+            .background(if (hasUnreadStory) BuddysTheme.colors.yellowHeader else BuddysTheme.colors.surfaceSecondary)
+            .border(
+                BorderStroke(2.dp, BuddysTheme.colors.border),
+                CircleShape
             )
-            .padding(if (hasUnreadStory) 3.5.dp else 1.5.dp)
+            .padding(3.dp)
             .clickable { onClick() },
         contentAlignment = Alignment.BottomEnd
     ) {
         AvatarView(
             imageUrl = imageUrl,
             displayName = displayName,
-            size = size - (if (hasUnreadStory) 7.dp else 3.dp)
+            size = size - 8.dp
         )
 
         if (isSelf) {
@@ -385,8 +395,8 @@ fun BuddysStoryRing(
                 modifier = Modifier
                     .size(20.dp)
                     .clip(CircleShape)
-                    .background(BuddysTheme.colors.primaryRed)
-                    .border(2.dp, BuddysTheme.colors.surface, CircleShape),
+                    .background(BuddysTheme.colors.primaryAccent)
+                    .border(1.5.dp, BuddysTheme.colors.border, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -401,19 +411,20 @@ fun BuddysStoryRing(
 }
 
 /**
- * Clean Badge pill component.
+ * Illustrated Paper Badge Pill.
  */
 @Composable
 fun BuddysBadge(
     text: String,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = BuddysTheme.colors.primaryRed,
+    backgroundColor: Color = BuddysTheme.colors.primaryAccent,
     textColor: Color = BuddysTheme.colors.textOnPrimary
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
+            .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(8.dp))
             .padding(horizontal = 7.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -429,7 +440,7 @@ fun BuddysBadge(
 }
 
 /**
- * Snapchat-style chat status indicator icon.
+ * Snapchat/Buddies Delivery Status Indicator with illustrated ink strokes.
  */
 enum class ChatDeliveryType {
     TEXT_SENT,
@@ -455,10 +466,10 @@ fun BuddysChatStatusIcon(
 ) {
     val color = when (type) {
         ChatDeliveryType.TEXT_SENT, ChatDeliveryType.TEXT_DELIVERED, ChatDeliveryType.TEXT_OPENED,
-        ChatDeliveryType.CHAT_RECEIVED, ChatDeliveryType.CHAT_OPENED -> Color(0xFF0084FF)
+        ChatDeliveryType.CHAT_RECEIVED, ChatDeliveryType.CHAT_OPENED -> BuddysTheme.colors.primaryAccent
         ChatDeliveryType.MEDIA_SENT, ChatDeliveryType.MEDIA_DELIVERED, ChatDeliveryType.MEDIA_OPENED,
-        ChatDeliveryType.SNAP_RECEIVED, ChatDeliveryType.SNAP_OPENED -> Color(0xFFFF2A55)
-        ChatDeliveryType.VOICE_SENT, ChatDeliveryType.VOICE_DELIVERED, ChatDeliveryType.VOICE_OPENED -> Color(0xFFA855F7)
+        ChatDeliveryType.SNAP_RECEIVED, ChatDeliveryType.SNAP_OPENED -> Color(0xFFF46A21)
+        ChatDeliveryType.VOICE_SENT, ChatDeliveryType.VOICE_DELIVERED, ChatDeliveryType.VOICE_OPENED -> Color(0xFFFF8A3D)
     }
 
     val isArrow = when (type) {
@@ -490,6 +501,11 @@ fun BuddysChatStatusIcon(
             }
             if (isFilled) {
                 drawPath(path = path, color = color)
+                drawPath(
+                    path = path,
+                    color = Color(0xFF171717),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                )
             } else {
                 drawPath(
                     path = path,
@@ -505,8 +521,8 @@ fun BuddysChatStatusIcon(
                 .clip(RoundedCornerShape(3.dp))
                 .background(if (isFilled) color else Color.Transparent)
                 .border(
-                    1.5.dp,
-                    color,
+                    1.2.dp,
+                    BuddysTheme.colors.border,
                     RoundedCornerShape(3.dp)
                 )
         )
@@ -514,7 +530,7 @@ fun BuddysChatStatusIcon(
 }
 
 /**
- * Modern Segmented Tab Pill for feeds and search filters with 3D tactile depth.
+ * Illustrated Segmented Tab Pill with Paper & Ink border.
  */
 @Composable
 fun BuddysTabPill(
@@ -538,7 +554,7 @@ fun BuddysTabPill(
 }
 
 /**
- * Modern 4-Tab Navigation Bar with 3D lifted states.
+ * Illustrated 5-Tab Navigation Bar with Paper Background, Ink Top Border, and Yellow Highlights.
  */
 @Composable
 fun BuddysBottomNavigationBar(
@@ -566,7 +582,7 @@ fun BuddysBottomNavigationBar(
 }
 
 /**
- * Standard Follow Button with 3 states (NOT_FOLLOWING, FOLLOWING, REQUESTED).
+ * Illustrated Follow Button with solid ink outline.
  */
 @Composable
 fun BuddysFollowButton(
@@ -601,8 +617,8 @@ fun BuddysFollowButton(
 }
 
 /**
- * Modern Social Feed Post Item (Clean Instagram-style content-first layout).
- * Supports author avatar with story ring, native full-width media, double-tap like, comments, bookmarking.
+ * Illustrated Social Feed Post Item with 1.5dp dark ink outline, flat paper card composition,
+ * author avatar, media with border, and hand-drawn reaction row.
  */
 @Composable
 fun SocialFeedMomentCard(
@@ -623,12 +639,13 @@ fun SocialFeedMomentCard(
     onAuthorClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        color = BuddysTheme.colors.surface,
-        border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(BuddysTheme.colors.surface)
+            .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
     ) {
         Column(
             modifier = Modifier
@@ -643,49 +660,21 @@ fun SocialFeedMomentCard(
                     .clickable(enabled = onAuthorClick != null) { onAuthorClick?.invoke() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar with Story Ring gradient
+                // Avatar with illustrated 1.5dp ink outline
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(StoryRingGradient)
-                        .padding(1.5.dp),
+                        .background(BuddysTheme.colors.yellowHeader)
+                        .border(1.5.dp, BuddysTheme.colors.border, CircleShape)
+                        .padding(2.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .background(BuddysTheme.colors.surface)
-                            .padding(1.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (!authorAvatarUrl.isNullOrBlank()) {
-                            AsyncImage(
-                                model = authorAvatarUrl,
-                                contentDescription = authorName,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
-                                    .background(BuddysTheme.colors.surfaceSecondary),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = authorName.take(1).uppercase(),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = BuddysTheme.colors.primaryRed
-                                )
-                            }
-                        }
-                    }
+                    AvatarView(
+                        imageUrl = authorAvatarUrl,
+                        displayName = authorName,
+                        size = 36.dp
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(10.dp))
@@ -693,8 +682,8 @@ fun SocialFeedMomentCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = authorName,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.5.sp,
                         color = BuddysTheme.colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -711,20 +700,23 @@ fun SocialFeedMomentCard(
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "Options",
-                    tint = BuddysTheme.colors.textMuted,
+                    tint = BuddysTheme.colors.textPrimary,
                     modifier = Modifier.size(20.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 2. Media Preview (Full-width native social styling)
+            // 2. Media Preview with solid 1.5dp ink border
             if (!mediaUrl.isNullOrBlank()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
                         .height(280.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(BuddysTheme.colors.surfaceSecondary)
+                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onDoubleTap = { onLikeClick() }
@@ -742,7 +734,7 @@ fun SocialFeedMomentCard(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // 3. Action Bar (Like, Comment, Direct Share, Bookmark)
+            // 3. Illustrated Action Bar (Like, Comment, Direct Share, Bookmark)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -756,14 +748,13 @@ fun SocialFeedMomentCard(
                 ) {
                     // Like button
                     Row(
-                        modifier = Modifier
-                            .clickable(onClick = onLikeClick),
+                        modifier = Modifier.clickable(onClick = onLikeClick),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Like",
-                            tint = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textPrimary,
+                            tint = if (isLiked) BuddysTheme.colors.primaryAccent else BuddysTheme.colors.textPrimary,
                             modifier = Modifier.size(24.dp)
                         )
                         if (likeCount > 0) {
@@ -771,30 +762,29 @@ fun SocialFeedMomentCard(
                             Text(
                                 text = likeCount.toString(),
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (isLiked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textPrimary
+                                fontWeight = FontWeight.Bold,
+                                color = if (isLiked) BuddysTheme.colors.primaryAccent else BuddysTheme.colors.textPrimary
                             )
                         }
                     }
 
                     // Comment button
                     Row(
-                        modifier = Modifier
-                            .clickable(onClick = onCommentClick),
+                        modifier = Modifier.clickable(onClick = onCommentClick),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ChatBubbleOutline,
                             contentDescription = "Comment",
                             tint = BuddysTheme.colors.textPrimary,
-                            modifier = Modifier.size(23.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                         if (commentCount > 0) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = commentCount.toString(),
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = FontWeight.Bold,
                                 color = BuddysTheme.colors.textPrimary
                             )
                         }
@@ -815,7 +805,7 @@ fun SocialFeedMomentCard(
                 Icon(
                     imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
                     contentDescription = "Bookmark",
-                    tint = if (isBookmarked) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textPrimary,
+                    tint = if (isBookmarked) BuddysTheme.colors.primaryAccent else BuddysTheme.colors.textPrimary,
                     modifier = Modifier
                         .size(23.dp)
                         .clickable(onClick = onBookmarkClick)
@@ -850,7 +840,8 @@ fun SocialFeedMomentCard(
                 Text(
                     text = "View all $commentCount comments",
                     fontSize = 12.sp,
-                    color = BuddysTheme.colors.textMuted,
+                    fontWeight = FontWeight.Medium,
+                    color = BuddysTheme.colors.textSecondary,
                     modifier = Modifier
                         .padding(horizontal = 14.dp)
                         .clickable { onCommentClick() }
@@ -861,7 +852,7 @@ fun SocialFeedMomentCard(
 }
 
 /**
- * Standard Modern Settings Row.
+ * Illustrated Paper Settings Row with thin ink divider.
  */
 @Composable
 fun BuddysSettingRow(
@@ -884,16 +875,17 @@ fun BuddysSettingRow(
         if (icon != null) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(BuddysTheme.colors.surfaceSecondary),
+                    .background(BuddysTheme.colors.surfaceSecondary)
+                    .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = iconTint,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(modifier = Modifier.width(14.dp))
@@ -903,7 +895,7 @@ fun BuddysSettingRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     color = BuddysTheme.colors.textPrimary,
                     fontSize = 14.5.sp
                 )
@@ -920,16 +912,18 @@ fun BuddysSettingRow(
         }
 
         if (!badge.isNullOrBlank()) {
-            Surface(
-                color = BuddysTheme.colors.primaryRed,
-                shape = CircleShape
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(BuddysTheme.colors.primaryAccent)
+                    .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 7.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = badge,
                     color = Color.White,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                    fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -950,7 +944,7 @@ fun BuddysSettingRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                 contentDescription = null,
-                tint = BuddysTheme.colors.textMuted,
+                tint = BuddysTheme.colors.textPrimary,
                 modifier = Modifier.size(14.dp)
             )
         }
@@ -958,7 +952,7 @@ fun BuddysSettingRow(
 }
 
 /**
- * Standard Modern Settings Section Card.
+ * Illustrated Paper Settings Section Card with 1.5dp ink outline.
  */
 @Composable
 fun BuddysSettingSection(
@@ -971,19 +965,20 @@ fun BuddysSettingSection(
             Text(
                 text = title.uppercase(),
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = BuddysTheme.colors.textMuted,
+                    fontWeight = FontWeight.Black,
+                    color = BuddysTheme.colors.textSecondary,
                     letterSpacing = 0.8.sp,
                     fontSize = 11.5.sp
                 ),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = BuddysTheme.colors.surface,
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(0.75.dp, BuddysTheme.colors.border)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(BuddysTheme.colors.surface)
+                .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 content()
@@ -993,7 +988,7 @@ fun BuddysSettingSection(
 }
 
 /**
- * Standard Switch Settings Row.
+ * Illustrated Switch Row.
  */
 @Composable
 fun BuddysSwitchRow(
@@ -1014,16 +1009,17 @@ fun BuddysSwitchRow(
         if (icon != null) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(BuddysTheme.colors.surfaceSecondary),
+                    .background(BuddysTheme.colors.surfaceSecondary)
+                    .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = BuddysTheme.colors.textPrimary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(modifier = Modifier.width(14.dp))
@@ -1033,7 +1029,7 @@ fun BuddysSwitchRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     color = BuddysTheme.colors.textPrimary,
                     fontSize = 14.5.sp
                 )
@@ -1054,12 +1050,10 @@ fun BuddysSwitchRow(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = BuddysTheme.colors.primaryRed,
+                checkedTrackColor = BuddysTheme.colors.primaryAccent,
                 uncheckedThumbColor = BuddysTheme.colors.textSecondary,
                 uncheckedTrackColor = BuddysTheme.colors.surfaceSecondary
             )
         )
     }
 }
-
-

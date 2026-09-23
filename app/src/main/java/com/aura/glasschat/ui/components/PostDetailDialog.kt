@@ -60,7 +60,7 @@ fun PostDetailDialog(
                     .clickable(enabled = false) {}, // prevent click-through
                 colors = CardDefaults.cardColors(containerColor = BuddysTheme.colors.surface),
                 shape = RoundedCornerShape(20.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border)
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, BuddysTheme.colors.border)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     // Header

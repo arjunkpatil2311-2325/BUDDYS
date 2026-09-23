@@ -46,6 +46,12 @@ fun AppUpdatesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(Unit) {
+        if (uiState is UpdateUiState.Idle || uiState is UpdateUiState.UpToDate) {
+            viewModel.checkForUpdates(force = true)
+        }
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxSize()

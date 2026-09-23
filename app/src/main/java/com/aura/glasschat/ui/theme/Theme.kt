@@ -13,31 +13,31 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val BuddysLightMaterialScheme = lightColorScheme(
-    primary = Color(0xFF4F46E5),
-    secondary = Color(0xFF6366F1),
-    tertiary = Color(0xFF0284C7),
-    background = Color(0xFFF8FAFC),
-    surface = Color(0xFFFFFFFF),
+    primary = Color(0xFFF46A21),
+    secondary = Color(0xFFFFE52E),
+    tertiary = Color(0xFFFF8A3D),
+    background = Color(0xFFFFF4DE),
+    surface = Color(0xFFFFFDF5),
     onPrimary = Color(0xFFFFFFFF),
-    onSecondary = Color(0xFFFFFFFF),
+    onSecondary = Color(0xFF171717),
     onTertiary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF0F172A),
-    onSurface = Color(0xFF0F172A),
-    outline = Color(0xFFE2E8F0)
+    onBackground = Color(0xFF171717),
+    onSurface = Color(0xFF171717),
+    outline = Color(0xFF171717)
 )
 
 private val BuddysDarkMaterialScheme = darkColorScheme(
-    primary = Color(0xFF6366F1),
-    secondary = Color(0xFF8B5CF6),
-    tertiary = Color(0xFF38BDF8),
-    background = Color(0xFF08090C),
-    surface = Color(0xFF111318),
+    primary = Color(0xFFF46A21),
+    secondary = Color(0xFFFFE52E),
+    tertiary = Color(0xFFFF8A3D),
+    background = Color(0xFF171513),
+    surface = Color(0xFF211E19),
     onPrimary = Color(0xFFFFFFFF),
-    onSecondary = Color(0xFFFFFFFF),
+    onSecondary = Color(0xFF171717),
     onTertiary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFFF8FAFC),
-    onSurface = Color(0xFFF8FAFC),
-    outline = Color(0xFF1E2330)
+    onBackground = Color(0xFFFFF4DE),
+    onSurface = Color(0xFFFFF4DE),
+    outline = Color(0xFF4A4338)
 )
 
 @Composable
