@@ -1,29 +1,28 @@
 {
-  "latestVersion": "0.4.8",
-  "versionCode": 12,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.8/app-universal-debug.apk",
+  "latestVersion": "0.4.9",
+  "versionCode": 13,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.9/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
-  "fileSize": "49.9 MB",
+  "fileSize": "50.0 MB",
   "abis": {
     "arm64-v8a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.8/app-arm64-v8a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.9/app-arm64-v8a-debug.apk",
       "apkFileName": "app-arm64-v8a-debug.apk",
       "fileSize": "20.0 MB"
     },
     "armeabi-v7a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.8/app-armeabi-v7a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.9/app-armeabi-v7a-debug.apk",
       "apkFileName": "app-armeabi-v7a-debug.apk",
       "fileSize": "16.7 MB"
     }
   },
-  "releaseDate": "2026-09-23",
+  "releaseDate": "2026-09-24",
   "releaseNotes": [
-    "Complete Retro Cartoon Paper & Ink UI redesign",
-    "Warm paper, yellow and orange visual system",
-    "Hand-drawn inspired buttons, icons and outlines",
-    "Redesigned Home, Search, Profile, Inbox and Chat",
-    "Redesigned Settings, App Lock and other screens",
-    "Improved visual consistency across Buddies",
+    "Fixed Supabase storage authentication with automatic token refresh on 401",
+    "Restored multi-account switching with hardware-backed AES-GCM vault",
+    "Double-tap profile icon to cycle between active accounts",
+    "Restored + Add Buddies Account secondary login and onboarding flow",
+    "Isolated account caches and signed media tokens upon switching",
     "Performance and stability improvements"
   ],
   "isMandatory": false,

@@ -315,7 +315,27 @@ serve(async (req: Request) => {
       }
     }
 
-    // D. Unknown Root Folder
+    // D. Feed Posts: posts/{postId}/{filename}
+    else if (rootFolder === "posts") {
+      if (pathParts.length !== 3) {
+        return new Response(
+          JSON.stringify({ error: "Invalid post path. Expected: posts/{postId}/{filename}" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const filename = pathParts[2];
+      if (action === "upload") {
+        if (!filename.startsWith(`${firebaseUid}_`)) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden: Post filename must start with your Firebase UID." }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+    // E. Unknown Root Folder
     else {
       return new Response(
         JSON.stringify({ error: `Forbidden: Unsupported root folder '${rootFolder}'.` }),

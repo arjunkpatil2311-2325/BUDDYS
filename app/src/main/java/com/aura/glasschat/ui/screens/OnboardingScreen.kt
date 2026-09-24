@@ -53,6 +53,13 @@ fun OnboardingScreen(
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
+            val authRepo = com.aura.glasschat.data.repository.AuthRepository()
+            val uid = authRepo.currentUserId
+            if (uid.isNotBlank() && uiState.password.isNotBlank()) {
+                val email = uiState.email.trim().ifBlank { authRepo.currentUser?.email ?: "" }
+                com.aura.glasschat.data.repository.AccountManagerRepository.getInstance(context)
+                    .saveSessionSecret(uid, email, uiState.password)
+            }
             onComplete()
         }
     }
@@ -229,7 +236,16 @@ fun OnboardingScreen(
                         OnboardingStep.COMPLETE -> {
                             CompleteStepContent(
                                 username = uiState.username,
-                                onFinish = onComplete
+                                onFinish = {
+                                    val authRepo = com.aura.glasschat.data.repository.AuthRepository()
+                                    val uid = authRepo.currentUserId
+                                    if (uid.isNotBlank() && uiState.password.isNotBlank()) {
+                                        val email = uiState.email.trim().ifBlank { authRepo.currentUser?.email ?: "" }
+                                        com.aura.glasschat.data.repository.AccountManagerRepository.getInstance(context)
+                                            .saveSessionSecret(uid, email, uiState.password)
+                                    }
+                                    onComplete()
+                                }
                             )
                         }
                     }

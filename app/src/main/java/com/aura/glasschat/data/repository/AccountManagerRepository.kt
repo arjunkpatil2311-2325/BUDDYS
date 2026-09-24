@@ -277,11 +277,20 @@ class AccountManagerRepository private constructor(private val context: Context)
         if (!decryptedSecret.isNullOrBlank() && target.email.isNotBlank()) {
             val loginResult = authRepository.logIn(target.email, decryptedSecret)
             if (loginResult.isFailure) {
-                return Result.failure(loginResult.exceptionOrNull() ?: Exception("Failed to switch account"))
+                return Result.failure(loginResult.exceptionOrNull() ?: Exception("Failed to switch to @${target.username}"))
             }
+        } else {
+            return Result.failure(Exception("No saved credentials for @${target.username}. Please re-add account."))
         }
 
+        // Clear media storage cache to avoid token/URL bleeding between accounts
+        SupabaseMediaStorageRepository.getInstance().clearCache()
+
         setActiveAccountUid(targetUid)
+        val updated = accounts.map {
+            if (it.uid == targetUid) it.copy(lastActiveAt = System.currentTimeMillis()) else it
+        }
+        persistAccounts(updated)
         return Result.success(target)
     }
 

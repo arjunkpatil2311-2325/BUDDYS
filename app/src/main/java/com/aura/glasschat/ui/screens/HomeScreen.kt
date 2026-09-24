@@ -970,6 +970,7 @@ fun HomeScreen(
                 onSwitchAccount = { target -> handleSwitchAccount(target) },
                 onAddAccount = {
                     showAccountSwitcherSheet = false
+                    authRepository.logOut()
                     onLoggedOut()
                 },
                 onRemoveAccount = { target ->

@@ -221,6 +221,16 @@ class AuthRepository(
                     ).await()
             } catch (_: Exception) {}
         }
+        try {
+            SupabaseMediaStorageRepository.getInstance().clearCache()
+        } catch (_: Exception) {}
+        auth.signOut()
+    }
+
+    fun logOut() {
+        try {
+            SupabaseMediaStorageRepository.getInstance().clearCache()
+        } catch (_: Exception) {}
         auth.signOut()
     }
 }

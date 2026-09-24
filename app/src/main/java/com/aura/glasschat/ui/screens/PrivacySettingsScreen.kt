@@ -862,6 +862,7 @@ fun PrivacySettingsScreen(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(10.dp))
                                     .clickable {
+                                        authRepository.logOut()
                                         onLoggedOut()
                                     }
                                     .padding(vertical = 8.dp),
@@ -1002,6 +1003,7 @@ fun PrivacySettingsScreen(
                 },
                 onAddAccount = {
                     showAccountSwitcherSheet = false
+                    authRepository.logOut()
                     onLoggedOut()
                 },
                 onRemoveAccount = { target ->

@@ -16,6 +16,7 @@ interface MediaStorageRepository {
     suspend fun deletePostMedia(postId: String): Result<Unit>
     suspend fun deleteProfilePicture(userId: String): Result<Unit>
     suspend fun resolveMediaUrl(rawUrlOrPath: String, expiresInSeconds: Int = SupabaseConfig.STORY_SIGNED_URL_EXPIRY_SECONDS): String
+    fun clearCache()
 }
 
 class SupabaseMediaStorageRepository(
@@ -37,6 +38,10 @@ class SupabaseMediaStorageRepository(
                 instance ?: SupabaseMediaStorageRepository().also { instance = it }
             }
         }
+    }
+
+    override fun clearCache() {
+        signedUrlCache.clear()
     }
 
     /**
