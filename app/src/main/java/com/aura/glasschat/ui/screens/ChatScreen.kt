@@ -357,10 +357,12 @@ fun ChatScreen(
 
                         Spacer(modifier = Modifier.width(4.dp))
 
-                        AvatarView(
-                            imageUrl = otherUser?.avatarUrl,
-                            displayName = otherUser?.displayName ?: "Friend",
-                            size = 38.dp,
+                        CartoonAvatar(
+                            name = otherUser?.displayName ?: "Friend",
+                            avatarUrl = otherUser?.avatarUrl,
+                            userId = otherUserId,
+                            size = 40.dp,
+                            showOnlineBadge = true,
                             isOnline = otherUser?.isOnline == true
                         )
 
@@ -1470,18 +1472,18 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 8.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(BuddysTheme.colors.surface)
-                            .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
-                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                            .clip(RoundedCornerShape(26.dp))
+                            .background(BuddysTheme.colors.surfaceComposer)
+                            .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(26.dp))
+                            .padding(horizontal = 6.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Attachment Plus Button
+                        // Attachment Plus Button (Black circle)
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
-                                .background(BuddysTheme.colors.surfaceSecondary)
+                                .background(Color(0xFF18181B))
                                 .clickable {
                                     viewModel.openAttachmentMenu()
                                 },
@@ -1490,7 +1492,7 @@ fun ChatScreen(
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = "Attachment",
-                                tint = BuddysTheme.colors.textSecondary,
+                                tint = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -1499,7 +1501,7 @@ fun ChatScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 10.dp)
+                                .padding(horizontal = 12.dp)
                         ) {
                             if (uiState.inputText.isEmpty()) {
                                 Text(
@@ -1518,7 +1520,7 @@ fun ChatScreen(
                                     color = BuddysTheme.colors.textPrimary,
                                     fontSize = 15.sp
                                 ),
-                                cursorBrush = androidx.compose.ui.graphics.SolidColor(BuddysTheme.colors.primaryRed)
+                                cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF18181B))
                             )
                         }
 
@@ -1526,12 +1528,12 @@ fun ChatScreen(
                         val hasImage = uiState.selectedImageUri != null
 
                         if (hasText || hasImage || uiState.editingMessage != null) {
-                            // Send / Save Button
+                            // Send / Save Button (Sunshine Yellow circle)
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(BuddysTheme.colors.primaryRed)
+                                    .background(Color(0xFFFDC827))
                                     .clickable(enabled = !uiState.isUploadingMedia && !uiState.isSending) {
                                         if (hasImage) {
                                             viewModel.sendSelectedImage()
@@ -1544,17 +1546,17 @@ fun ChatScreen(
                                 Icon(
                                     imageVector = if (uiState.editingMessage != null) Icons.Default.Check else Icons.AutoMirrored.Filled.Send,
                                     contentDescription = "Send",
-                                    tint = BuddysTheme.colors.textOnPrimary,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = Color(0xFF18181B),
+                                    modifier = Modifier.size(19.dp)
                                 )
                             }
                         } else {
-                            // Voice Microphone Button
+                            // Voice Microphone Button (Sky Blue circle)
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(BuddysTheme.colors.surfaceSecondary)
+                                    .background(Color(0xFF82C8FA))
                                     .clickable {
                                         val hasPermission = ContextCompat.checkSelfPermission(
                                             context,
@@ -1572,7 +1574,7 @@ fun ChatScreen(
                                 Icon(
                                     imageVector = Icons.Default.Mic,
                                     contentDescription = "Record voice message",
-                                    tint = BuddysTheme.colors.textSecondary,
+                                    tint = Color(0xFF18181B),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -2326,11 +2328,11 @@ fun NostalgicMessageItem(
                     label = "highlightBorder"
                 )
 
-                val outgoingBubbleColor = BuddysTheme.colors.primaryRed
+                val outgoingBubbleColor = BuddysTheme.colors.bubbleOutgoing
                 val incomingBubbleColor = if (hasWallpaper) {
-                    BuddysTheme.colors.surface.copy(alpha = 0.95f)
+                    BuddysTheme.colors.bubbleIncoming.copy(alpha = 0.95f)
                 } else {
-                    BuddysTheme.colors.surface
+                    BuddysTheme.colors.bubbleIncoming
                 }
 
                 val bubbleShape = if (message.isMissedCallMessage) {

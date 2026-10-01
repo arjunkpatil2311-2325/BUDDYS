@@ -54,6 +54,7 @@ sealed class Screen(val route: String) {
     data object HiddenChats : Screen("hidden_chats")
     data object StorageManager : Screen("storage_manager")
     data object AppUpdates : Screen("app_updates")
+    data object BuddysAi : Screen("buddys_ai")
     data object Call : Screen("call/{otherUserId}/{otherName}/{callType}") {
         fun createRoute(otherUserId: String, otherName: String, callType: String, avatarUrl: String? = null): String {
             val encodedName = try { java.net.URLEncoder.encode(otherName, "UTF-8") } catch (_: Exception) { otherName }
@@ -160,6 +161,9 @@ fun AppNavHost(
                 },
                 onOpenStorageManager = {
                     navController.navigate(Screen.StorageManager.route)
+                },
+                onOpenAi = {
+                    navController.navigate(Screen.BuddysAi.route)
                 },
                 onOpenCall = { otherUserId, otherName, isVideo ->
                     navController.navigate(Screen.Call.createRoute(otherUserId, otherName, if (isVideo) "video" else "audio"))
@@ -358,6 +362,12 @@ fun AppNavHost(
 
         composable(Screen.CommunityRules.route) {
             CommunityRulesScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.BuddysAi.route) {
+            BuddysAiScreen(
                 onBack = { navController.popBackStack() }
             )
         }

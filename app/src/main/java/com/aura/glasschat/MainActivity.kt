@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.aura.glasschat.data.repository.AuthRepository
 import com.aura.glasschat.security.AppLockManager
+import com.aura.glasschat.ui.components.DynamicIslandManager
+import com.aura.glasschat.ui.components.DynamicIslandOverlay
 import com.aura.glasschat.ui.components.UpdateDialog
 import com.aura.glasschat.ui.navigation.AppNavHost
 import com.aura.glasschat.ui.navigation.Screen
@@ -48,12 +50,33 @@ class MainActivity : ComponentActivity() {
             GlassChatTheme {
                 val isAppLocked by appLockManager.isAppLocked.collectAsState()
                 val updateUiState by updateViewModel.uiState.collectAsState()
+                val islandEvent by DynamicIslandManager.currentEvent.collectAsState()
                 val navController = rememberNavController()
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     AppNavHost(
                         navController = navController,
                         startDestination = startDestination
+                    )
+
+                    // Android-Native Dynamic Island Quick-Response Overlay
+                    DynamicIslandOverlay(
+                        event = islandEvent,
+                        onOpenChat = { chatId, otherUserId ->
+                            navController.navigate(Screen.Chat.createRoute(chatId, otherUserId))
+                        },
+                        onOpenAi = {
+                            navController.navigate(Screen.BuddysAi.route)
+                        },
+                        onAnswerCall = { callerId, callerName, isVideo ->
+                            navController.navigate(Screen.Call.createRoute(callerId, callerName, if (isVideo) "video" else "audio"))
+                        },
+                        onDeclineCall = {
+                            DynamicIslandManager.dismiss()
+                        },
+                        onDismiss = {
+                            DynamicIslandManager.dismiss()
+                        }
                     )
 
                     if (isAppLocked && authRepository.isUserLoggedIn) {
@@ -94,4 +117,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

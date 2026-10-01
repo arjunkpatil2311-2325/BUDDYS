@@ -76,8 +76,8 @@ fun VoiceMessageBubble(
         label = "pulse"
     )
 
-    val activeColor = if (isOutgoing) Color.White else BuddysTheme.colors.primaryRed
-    val inactiveColor = if (isOutgoing) Color.White.copy(alpha = 0.35f) else BuddysTheme.colors.textMuted.copy(alpha = 0.25f)
+    val activeColor = if (isOutgoing) Color(0xFF18181B) else Color(0xFF18181B)
+    val inactiveColor = if (isOutgoing) Color(0xFF18181B).copy(alpha = 0.28f) else Color(0xFF94A3B8).copy(alpha = 0.45f)
 
     Row(
         modifier = modifier
@@ -90,13 +90,7 @@ fun VoiceMessageBubble(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(
-                    if (isOutgoing) {
-                        if (isPlaying) Color.White else Color.White.copy(alpha = 0.22f)
-                    } else {
-                        if (isPlaying) BuddysTheme.colors.primaryRed else BuddysTheme.colors.surfaceElevated
-                    }
-                )
+                .background(Color(0xFF18181B))
                 .clickable { onPlayPauseClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -104,17 +98,13 @@ fun VoiceMessageBubble(
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
-                    color = if (isOutgoing) Color.White else BuddysTheme.colors.primaryRed
+                    color = Color.White
                 )
             } else {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = if (isOutgoing) {
-                        if (isPlaying) BuddysTheme.colors.primaryRed else Color.White
-                    } else {
-                        if (isPlaying) BuddysTheme.colors.textOnPrimary else BuddysTheme.colors.textPrimary
-                    },
+                    tint = Color.White,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -194,9 +184,9 @@ fun VoiceMessageBubble(
                     Text(
                         text = displayTime,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (isOutgoing) Color.White.copy(alpha = 0.95f) else if (isPlaying) BuddysTheme.colors.primaryRed else BuddysTheme.colors.textSecondary,
-                            fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 11.sp
+                            color = if (isOutgoing) Color(0xFF18181B) else Color(0xFF475569),
+                            fontWeight = if (isPlaying) FontWeight.ExtraBold else FontWeight.SemiBold,
+                            fontSize = 11.5.sp
                         )
                     )
 
@@ -204,7 +194,7 @@ fun VoiceMessageBubble(
                         Text(
                             text = "/ " + ChatUtils.formatDuration(totalDuration),
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = if (isOutgoing) Color.White.copy(alpha = 0.7f) else BuddysTheme.colors.textMuted,
+                                color = if (isOutgoing) Color(0xFF18181B).copy(alpha = 0.65f) else BuddysTheme.colors.textMuted,
                                 fontSize = 10.sp
                             )
                         )
@@ -222,7 +212,7 @@ fun VoiceMessageBubble(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(
-                                if (isOutgoing) Color.White.copy(alpha = 0.2f) else BuddysTheme.colors.surfaceElevated
+                                if (isOutgoing) Color(0xFF18181B).copy(alpha = 0.12f) else BuddysTheme.colors.surfaceSecondary
                             )
                             .clickable { onToggleSpeed() }
                             .padding(horizontal = 6.dp, vertical = 2.dp),
@@ -231,7 +221,7 @@ fun VoiceMessageBubble(
                         Text(
                             text = speedText,
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = if (isOutgoing) Color.White else BuddysTheme.colors.textPrimary,
+                                color = if (isOutgoing) Color(0xFF18181B) else BuddysTheme.colors.textPrimary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 10.sp
                             )

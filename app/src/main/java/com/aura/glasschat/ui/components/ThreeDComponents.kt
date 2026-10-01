@@ -449,89 +449,127 @@ fun ThreeDBottomBar(
     onProfileDoubleTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding(),
-        color = BuddysTheme.colors.surface,
-        border = BorderStroke(1.5.dp, BuddysTheme.colors.border)
+            .navigationBarsPadding()
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Row(
+        // Deep Dark Dock Surface
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp)
-                .padding(horizontal = 6.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+                .height(64.dp)
+                .clip(RoundedCornerShape(32.dp))
+                .border(1.5.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(32.dp)),
+            color = Color(0xFF121316),
+            shape = RoundedCornerShape(32.dp)
         ) {
-            // TAB 1: HOME
-            val isHome = selectedTab == HomeBottomTab.HOME
-            ThreeDNavTabItem(
-                selected = isHome,
-                label = "Home",
-                icon = if (isHome) Icons.Filled.Home else Icons.Outlined.Home,
-                showDotBadge = hasUnreadUpdates,
-                onClick = { onTabSelected(HomeBottomTab.HOME) }
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 1. CHATS TAB
+                val isChats = selectedTab == HomeBottomTab.INBOX || selectedTab == HomeBottomTab.HOME
+                CartoonDockItem(
+                    selected = isChats,
+                    label = "Chats",
+                    icon = Icons.Filled.ChatBubble,
+                    badgeCount = unreadChatsCount,
+                    onClick = { onTabSelected(HomeBottomTab.INBOX) }
+                )
 
-            // TAB 2: SEARCH
-            val isSearch = selectedTab == HomeBottomTab.SEARCH
-            ThreeDNavTabItem(
-                selected = isSearch,
-                label = "Search",
-                icon = if (isSearch) Icons.Filled.Search else Icons.Outlined.Search,
-                onClick = { onTabSelected(HomeBottomTab.SEARCH) }
-            )
+                // 2. CALLS TAB
+                val isCalls = false
+                CartoonDockItem(
+                    selected = isCalls,
+                    label = "Calls",
+                    icon = Icons.Filled.Call,
+                    badgeCount = missedCallsCount,
+                    onClick = { onTabSelected(HomeBottomTab.HOME) }
+                )
 
-            // TAB 3: CREATE
-            val isCreate = selectedTab == HomeBottomTab.CREATE
-            ThreeDNavTabItem(
-                selected = isCreate,
-                label = "Create",
-                icon = if (isCreate) Icons.Filled.AddCircle else Icons.Outlined.AddCircle,
-                onClick = { onTabSelected(HomeBottomTab.CREATE) }
-            )
+                // 3. CENTER GAP (Reserved for the elevated center waveform button)
+                Spacer(modifier = Modifier.width(52.dp))
 
-            // TAB 4: INBOX
-            val isInbox = selectedTab == HomeBottomTab.INBOX
-            ThreeDNavTabItem(
-                selected = isInbox,
-                label = "Inbox",
-                icon = if (isInbox) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline,
-                badgeCount = unreadChatsCount,
-                onClick = { onTabSelected(HomeBottomTab.INBOX) }
-            )
+                // 4. DISCOVER TAB
+                val isDiscover = selectedTab == HomeBottomTab.SEARCH
+                CartoonDockItem(
+                    selected = isDiscover,
+                    label = "Discover",
+                    icon = Icons.Filled.Explore,
+                    onClick = { onTabSelected(HomeBottomTab.SEARCH) }
+                )
 
-            // TAB 5: PROFILE
-            val isProfile = selectedTab == HomeBottomTab.PROFILE
-            ThreeDNavTabItem(
-                selected = isProfile,
-                label = "Profile",
-                icon = if (isProfile) Icons.Filled.Person else Icons.Outlined.Person,
-                avatarUrl = userAvatarUrl,
-                avatarName = userDisplayName,
-                onDoubleClick = onProfileDoubleTap,
-                onClick = { onTabSelected(HomeBottomTab.PROFILE) }
-            )
+                // 5. PROFILE TAB
+                val isProfile = selectedTab == HomeBottomTab.PROFILE
+                CartoonDockItem(
+                    selected = isProfile,
+                    label = "Profile",
+                    icon = Icons.Filled.Person,
+                    showDotBadge = hasUnreadUpdates,
+                    onDoubleClick = onProfileDoubleTap,
+                    onClick = { onTabSelected(HomeBottomTab.PROFILE) }
+                )
+            }
+        }
+
+        // Elevated Center Yellow Waveform Button
+        val interactionSource = remember { MutableInteractionSource() }
+        val isPressed by interactionSource.collectIsPressedAsState()
+        val centerScale by animateFloatAsState(
+            targetValue = if (isPressed) 0.90f else 1.0f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+            label = "CenterBtnScale"
+        )
+
+        Box(
+            modifier = Modifier
+                .offset(y = (-14).dp)
+                .size(56.dp)
+                .scale(centerScale)
+                .clip(CircleShape)
+                .background(Color(0xFFFDC827))
+                .border(2.5.dp, Color(0xFF121316), CircleShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = { onTabSelected(HomeBottomTab.CREATE) }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // 5 Waveform Bars Graphic in Black
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.width(3.dp).height(10.dp).clip(RoundedCornerShape(1.5.dp)).background(Color(0xFF18181B)))
+                Box(modifier = Modifier.width(3.dp).height(18.dp).clip(RoundedCornerShape(1.5.dp)).background(Color(0xFF18181B)))
+                Box(modifier = Modifier.width(3.5.dp).height(24.dp).clip(RoundedCornerShape(1.5.dp)).background(Color(0xFF18181B)))
+                Box(modifier = Modifier.width(3.dp).height(18.dp).clip(RoundedCornerShape(1.5.dp)).background(Color(0xFF18181B)))
+                Box(modifier = Modifier.width(3.dp).height(10.dp).clip(RoundedCornerShape(1.5.dp)).background(Color(0xFF18181B)))
+            }
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RowScope.ThreeDNavTabItem(
+private fun RowScope.CartoonDockItem(
     selected: Boolean,
     label: String,
     icon: ImageVector,
-    avatarUrl: String? = null,
-    avatarName: String? = null,
     badgeCount: Int = 0,
     showDotBadge: Boolean = false,
     onDoubleClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
-    val activeBg = BuddysTheme.colors.yellowHeader
-    val iconColor = BuddysTheme.colors.textPrimary
+    val activeColor = Color(0xFFFDC827)
+    val inactiveColor = Color(0xFF94A3B8)
 
     Box(
         modifier = Modifier
@@ -543,75 +581,56 @@ private fun RowScope.ThreeDNavTabItem(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .then(
-                    if (selected) Modifier
-                        .background(activeBg)
-                        .border(1.2.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
-                    else Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                ),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            if (avatarUrl != null || (avatarName != null && selected)) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .border(
-                            1.5.dp,
-                            BuddysTheme.colors.border,
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AvatarView(
-                        imageUrl = avatarUrl,
-                        displayName = avatarName ?: "You",
-                        size = 26.dp
-                    )
-                }
-            } else {
+            Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = label,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
+                    tint = if (selected) activeColor else inactiveColor,
+                    modifier = Modifier.size(22.dp)
                 )
-            }
 
-            if (badgeCount > 0) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 8.dp, y = (-4).dp)
-                        .clip(CircleShape)
-                        .background(BuddysTheme.colors.primaryAccent)
-                        .border(1.dp, BuddysTheme.colors.border, CircleShape)
-                        .padding(horizontal = 4.5.dp, vertical = 1.dp)
-                ) {
-                    Text(
-                        text = if (badgeCount > 99) "99+" else badgeCount.toString(),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 9.sp
+                if (badgeCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 8.dp, y = (-4).dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFDC827))
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = if (badgeCount > 99) "99+" else badgeCount.toString(),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = Color(0xFF18181B),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 8.5.sp
+                            )
                         )
+                    }
+                } else if (showDotBadge) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 4.dp, y = (-2).dp)
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFDC827))
                     )
                 }
-            } else if (showDotBadge) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 4.dp, y = (-2).dp)
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(BuddysTheme.colors.primaryAccent)
-                        .border(1.dp, BuddysTheme.colors.border, CircleShape)
-                )
             }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = label,
+                color = if (selected) activeColor else inactiveColor,
+                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
+                fontSize = 10.5.sp
+            )
         }
     }
 }

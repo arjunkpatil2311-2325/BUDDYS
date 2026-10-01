@@ -1,28 +1,29 @@
 {
-  "latestVersion": "0.4.9",
-  "versionCode": 13,
-  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.9/app-universal-debug.apk",
+  "latestVersion": "0.5.0",
+  "versionCode": 14,
+  "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.5.0/app-universal-debug.apk",
   "apkFileName": "app-universal-debug.apk",
   "fileSize": "50.0 MB",
   "abis": {
     "arm64-v8a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.9/app-arm64-v8a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.5.0/app-arm64-v8a-debug.apk",
       "apkFileName": "app-arm64-v8a-debug.apk",
-      "fileSize": "20.0 MB"
+      "fileSize": "20.1 MB"
     },
     "armeabi-v7a": {
-      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.4.9/app-armeabi-v7a-debug.apk",
+      "apkUrl": "https://github.com/arjunkpatil2311-2325/BUDDYS/releases/download/v0.5.0/app-armeabi-v7a-debug.apk",
       "apkFileName": "app-armeabi-v7a-debug.apk",
-      "fileSize": "16.7 MB"
+      "fileSize": "16.8 MB"
     }
   },
-  "releaseDate": "2026-09-24",
+  "releaseDate": "2026-10-01",
   "releaseNotes": [
-    "Fixed Supabase storage authentication with automatic token refresh on 401",
-    "Restored multi-account switching with hardware-backed AES-GCM vault",
-    "Double-tap profile icon to cycle between active accounts",
-    "Restored + Add Buddies Account secondary login and onboarding flow",
-    "Isolated account caches and signed media tokens upon switching",
+    "Full cartoon UI redesign with Sky-Blue headers, Sunshine-Yellow accents & cream surfaces",
+    "Hand-crafted cartoon squircle avatar generator with 9 character archetypes",
+    "Android Dynamic-Island style floating quick-response notification overlay",
+    "Dedicated Buddys AI assistant with interactive suggestions and real-time state sync",
+    "Redesigned voice message bubble with dark waveforms and instant seek scrubbing",
+    "Capsule composer bar with quick attachments and circular audio recorder",
     "Performance and stability improvements"
   ],
   "isMandatory": false,

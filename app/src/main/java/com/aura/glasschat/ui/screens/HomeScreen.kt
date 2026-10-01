@@ -84,6 +84,7 @@ fun HomeScreen(
     onOpenStoryArchive: () -> Unit = {},
     onOpenHiddenChats: () -> Unit = {},
     onOpenStorageManager: () -> Unit = {},
+    onOpenAi: () -> Unit = {},
     onOpenCall: (otherUserId: String, otherName: String, isVideo: Boolean) -> Unit = { _, _, _ -> },
     onLoggedOut: () -> Unit = {},
     viewModel: HomeViewModel = viewModel(),
@@ -653,10 +654,9 @@ fun HomeScreen(
                         val totalUnreadChats = uiState.chats.count { it.hasUnread(currentUid) }
                         val categories = listOf(
                             "ALL" to ("All" to null),
-                            "UNREAD" to ("Unread" to totalUnreadChats),
-                            "CLOSE_FRIENDS" to ("Close Friends" to null),
+                            "FRIENDS" to ("Friends" to null),
                             "GROUPS" to ("Groups" to null),
-                            "PINNED" to ("Pinned" to null)
+                            "UNREAD" to ("Unread" to totalUnreadChats)
                         )
 
                         val chatsToDisplay = uiState.filteredChats.filter { chat ->
@@ -665,6 +665,7 @@ fun HomeScreen(
                                 when (chatFilterChip) {
                                     "UNREAD" -> chat.hasUnread(currentUid)
                                     "PINNED" -> chat.isPinned(currentUid)
+                                    "FRIENDS" -> chat.participants.size <= 2
                                     "CLOSE_FRIENDS" -> currentUser?.closeFriends?.contains(otherUid) == true
                                     "GROUPS" -> chat.participants.size > 2
                                     else -> true
@@ -674,22 +675,35 @@ fun HomeScreen(
 
                         Box(modifier = Modifier.fillMaxSize()) {
                             Column(modifier = Modifier.fillMaxSize()) {
-                                // Top Header for Inbox: [Inbox Title] [Search] [Add]
+                                // Top Header for Inbox: [User Avatar] [Chats Title] [Search / Add Actions]
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                        .padding(horizontal = 18.dp, vertical = 10.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "Inbox",
-                                        style = MaterialTheme.typography.headlineMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = BuddysTheme.colors.textPrimary,
-                                            fontSize = 24.sp
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        CartoonAvatar(
+                                            name = currentUser?.displayName ?: "Me",
+                                            avatarUrl = currentUser?.avatarUrl,
+                                            userId = currentUid,
+                                            size = 38.dp,
+                                            modifier = Modifier.clickable { onOpenProfile() }
                                         )
-                                    )
+                                        Text(
+                                            text = "Chats",
+                                            style = MaterialTheme.typography.headlineMedium.copy(
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = BuddysTheme.colors.textPrimary,
+                                                fontSize = 24.sp
+                                            )
+                                        )
+                                    }
+
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         IconButton(
                                             onClick = { selectedTab = HomeBottomTab.SEARCH },
@@ -710,13 +724,13 @@ fun HomeScreen(
                                             modifier = Modifier
                                                 .size(38.dp)
                                                 .clip(CircleShape)
-                                                .background(BuddysTheme.colors.primaryRed)
+                                                .background(Color(0xFF18181B))
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.PersonAdd,
+                                                imageVector = Icons.Default.Add,
                                                 contentDescription = "Add Buddy",
                                                 tint = Color.White,
-                                                modifier = Modifier.size(19.dp)
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     }
@@ -736,8 +750,7 @@ fun HomeScreen(
                                             text = label,
                                             isSelected = chatFilterChip == code,
                                             onClick = { chatFilterChip = code },
-                                            count = count,
-                                            trailingEmoji = if (code == "CLOSE_FRIENDS") "⭐" else null
+                                            count = count
                                         )
                                     }
                                 }
@@ -745,31 +758,38 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 // Chat Feed List
-                                if (chatsToDisplay.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        BuddysEmptyState(
-                                            title = if (chatFilterChip == "ALL") "No messages yet" else "No chats in this filter",
-                                            subtitle = if (chatFilterChip == "ALL") "Start a conversation with your buddies." else "Try choosing another filter tab.",
-                                            icon = Icons.AutoMirrored.Filled.Chat,
-                                            actionText = if (chatFilterChip != "ALL") "View all chats" else "Start Chat",
-                                            onActionClick = {
-                                                if (chatFilterChip != "ALL") chatFilterChip = "ALL" else onOpenAddFriend()
-                                            }
-                                        )
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                    contentPadding = PaddingValues(top = 2.dp, bottom = 80.dp),
+                                    verticalArrangement = Arrangement.spacedBy(1.dp)
+                                ) {
+                                    // Pinned Buddys AI Assistant
+                                    if (chatFilterChip == "ALL" || chatFilterChip == "FRIENDS") {
+                                        item(key = "buddys_ai_pinned_chat") {
+                                            BuddysAiChatRow(onClick = onOpenAi)
+                                        }
                                     }
-                                } else {
-                                    LazyColumn(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f),
-                                        contentPadding = PaddingValues(top = 2.dp, bottom = 80.dp),
-                                        verticalArrangement = Arrangement.spacedBy(1.dp)
-                                    ) {
+
+                                    if (chatsToDisplay.isEmpty() && chatFilterChip != "ALL") {
+                                        item(key = "empty_filter_state") {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 40.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                BuddysEmptyState(
+                                                    title = "No chats in this tab",
+                                                    subtitle = "Try switching back to the All tab.",
+                                                    icon = Icons.AutoMirrored.Filled.Chat,
+                                                    actionText = "View all chats",
+                                                    onActionClick = { chatFilterChip = "ALL" }
+                                                )
+                                            }
+                                        }
+                                    } else {
                                         items(
                                             items = chatsToDisplay,
                                             key = { it.chatId }
@@ -1873,7 +1893,7 @@ private fun BuddyCardItem(
 }
 
 // ====================================================================
-// PREMIUM SNAPCHAT CHAT ROW
+// CARTOON CHAT ROW (REFERENCE STYLE)
 // ====================================================================
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -1888,52 +1908,18 @@ private fun PremiumChatRow(
 ) {
     val otherInfo = chat.getOtherParticipantInfo(currentUid)
     val hasUnread = chat.hasUnread(currentUid)
+    val unreadCount = if (hasUnread) 1 else 0
     val isPinned = chat.isPinned(currentUid)
     val isMuted = chat.isMuted(currentUid)
     val isLocked = chat.isLocked(currentUid)
     val isSentByMe = chat.lastMessageSenderId == currentUid
 
-    val isMediaMessage = chat.lastMessage.contains("[Image]", ignoreCase = true) ||
-            chat.lastMessage.contains("photo", ignoreCase = true) ||
-            chat.lastMessage.contains("snap", ignoreCase = true)
     val isVoiceMessage = chat.lastMessage.contains("Voice message", ignoreCase = true) ||
             chat.lastMessage.contains("🎤", ignoreCase = true)
 
-    val (deliveryType, statusLabel) = when {
-        isSentByMe -> {
-            val type = if (isMediaMessage) ChatDeliveryType.MEDIA_DELIVERED
-            else if (isVoiceMessage) ChatDeliveryType.VOICE_DELIVERED
-            else ChatDeliveryType.TEXT_DELIVERED
-            type to "Delivered"
-        }
-        hasUnread -> {
-            val type = if (isMediaMessage) ChatDeliveryType.SNAP_RECEIVED
-            else if (isVoiceMessage) ChatDeliveryType.VOICE_SENT
-            else ChatDeliveryType.CHAT_RECEIVED
-            val label = if (isMediaMessage) "New Snap"
-            else if (isVoiceMessage) "New Audio"
-            else "New Chat"
-            type to label
-        }
-        else -> {
-            val type = if (isMediaMessage) ChatDeliveryType.SNAP_OPENED
-            else if (isVoiceMessage) ChatDeliveryType.VOICE_OPENED
-            else ChatDeliveryType.CHAT_OPENED
-            val label = if (isMediaMessage) "Received" else "Opened"
-            type to label
-        }
-    }
-
     val timeFormatted = ChatUtils.formatSnapchatTime(chat.lastMessageTimestamp)
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(14.dp),
-        color = if (hasUnread) BuddysTheme.colors.surfaceElevated else BuddysTheme.colors.surface,
-        border = BorderStroke(1.5.dp, BuddysTheme.colors.border)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1941,84 +1927,79 @@ private fun PremiumChatRow(
                     onClick = onClick,
                     onLongClick = onLongClick
                 )
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. Avatar with Story Ring / Outline styling
+            // 1. Colorful Squircle Cartoon Avatar with Story Ring / Status
             Box(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(52.dp)
                     .then(
-                        if (hasActiveStory) Modifier.border(2.dp, StoryRingGradient, CircleShape).padding(2.dp)
+                        if (hasActiveStory) Modifier.border(2.dp, StoryRingGradient, RoundedCornerShape(17.dp)).padding(2.dp)
                         else Modifier
                     )
-                    .clip(CircleShape)
                     .combinedClickable(
                         onClick = onClick,
                         onLongClick = { onAvatarLongClick?.invoke() ?: onLongClick() }
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                ThreeDAvatar(
-                    imageUrl = otherInfo.avatarUrl,
-                    displayName = otherInfo.displayName,
-                    size = 46.dp,
-                    isOnline = false
+                CartoonAvatar(
+                    size = 48.dp,
+                    avatarUrl = otherInfo.avatarUrl,
+                    name = otherInfo.displayName,
+                    userId = otherInfo.uid,
+                    isOnline = false,
+                    showOnlineBadge = false,
+                    cornerRadius = 15.dp
                 )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // 2. Center Text Column (Name + Streak, Subtitle Delivery Status)
+            // 2. Center Text Column (Name + Snippet)
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                // Top Line: Display Name + Emoji / Streak indicator
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = otherInfo.displayName,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.SemiBold,
-                            color = BuddysTheme.colors.textPrimary,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF18181B),
                             fontSize = 15.5.sp
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // Pinned Indicator
                     if (isPinned) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Default.Bookmark,
                             contentDescription = "Pinned",
-                            tint = BuddysTheme.colors.primaryRed,
+                            tint = Color(0xFFFDC827),
                             modifier = Modifier.size(13.dp)
                         )
                     }
 
-                    // Locked Indicator
                     if (isLocked) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = "Locked",
-                            tint = BuddysTheme.colors.primaryRed,
+                            tint = Color(0xFFEF4444),
                             modifier = Modifier.size(13.dp)
                         )
                     }
 
-                    // Muted Indicator
                     if (isMuted) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            imageVector = Icons.Default.NotificationsNone,
+                            imageVector = Icons.Default.NotificationsOff,
                             contentDescription = "Muted",
-                            tint = BuddysTheme.colors.textMuted,
+                            tint = Color(0xFF94A3B8),
                             modifier = Modifier.size(13.dp)
                         )
                     }
@@ -2026,58 +2007,162 @@ private fun PremiumChatRow(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // Bottom Line: Delivery Icon + Status Text + Time + Streak
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    BuddysChatStatusIcon(
-                        type = deliveryType,
-                        size = 11.dp
-                    )
-
-                    Spacer(modifier = Modifier.width(5.dp))
-
-                    Text(
-                        text = statusLabel,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = if (hasUnread) BuddysTheme.colors.textPrimary else BuddysTheme.colors.textSecondary,
-                            fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 13.sp
-                        )
-                    )
-
-                    Text(
-                        text = " · ",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = BuddysTheme.colors.textMuted,
-                            fontSize = 13.sp
-                        )
-                    )
-
-                    Text(
-                        text = timeFormatted,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = BuddysTheme.colors.textMuted,
-                            fontSize = 12.5.sp
-                        )
-                    )
+                val previewText = when {
+                    isVoiceMessage -> "🎙️ Voice message"
+                    isSentByMe -> "You: ${chat.lastMessage}"
+                    else -> chat.lastMessage.ifBlank { "Tap to say hello 👋" }
                 }
+
+                Text(
+                    text = previewText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = if (isVoiceMessage) Color(0xFF0284C7) else Color(0xFF64748B),
+                        fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = 13.sp
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // 3. Right Quick Action: Camera Snap Button [📷]
-            ThreeDIconButton(
-                onClick = onCameraClick,
-                icon = Icons.Outlined.PhotoCamera,
-                contentDescription = "Quick Snap",
-                size = 36.dp,
-                iconSize = 17.dp,
-                containerColor = BuddysTheme.colors.surfaceSecondary,
-                tint = BuddysTheme.colors.textSecondary
-            )
+            // 3. Right Column: Unread Pill Badge & Timestamp
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (hasUnread && unreadCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFFDC827))
+                            .padding(horizontal = 7.dp, vertical = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = Color(0xFF18181B),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.sp
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                Text(
+                    text = timeFormatted,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+            }
         }
+
+        // Subtle Divider
+        HorizontalDivider(
+            color = Color(0xFFF1F5F9),
+            thickness = 1.dp,
+            modifier = Modifier.padding(start = 76.dp, end = 16.dp)
+        )
+    }
+}
+
+/**
+ * Pinned Buddys AI Row inside the Chat List.
+ */
+@Composable
+private fun BuddysAiChatRow(
+    onClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CartoonAvatar(
+                size = 48.dp,
+                isAi = true,
+                name = "Buddys AI",
+                isOnline = true,
+                showOnlineBadge = true,
+                cornerRadius = 15.dp
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Buddys AI",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF18181B),
+                            fontSize = 15.5.sp
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFF4F46E5).copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            text = "AI",
+                            color = Color(0xFF4F46E5),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 9.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = "Hey! What can I help you with?",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color(0xFF4F46E5),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFF4F46E5).copy(alpha = 0.10f)
+                ) {
+                    Text(
+                        text = "Online",
+                        color = Color(0xFF15803D),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(
+            color = Color(0xFFF1F5F9),
+            thickness = 1.dp,
+            modifier = Modifier.padding(start = 76.dp, end = 16.dp)
+        )
     }
 }
 
