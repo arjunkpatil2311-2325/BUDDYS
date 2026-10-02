@@ -57,14 +57,29 @@ fun BuddysAiScreen(
         }
     }
 
-    Scaffold(
-        containerColor = BuddysTheme.colors.skyHeader,
-        topBar = {
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    LaunchedEffect(imeBottom) {
+        if (imeBottom > 0.dp && uiState.messages.isNotEmpty()) {
+            listState.animateScrollToItem(uiState.messages.size - 1)
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BuddysTheme.colors.skyHeader)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding()
+        ) {
             // Sky-Blue Header Banner matching reference
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -133,40 +148,71 @@ fun BuddysAiScreen(
                     }
                 }
             }
-        },
-        bottomBar = {
-            // Capsule Composer
+
+            // Main Warm Cream Content Surface
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)),
+                color = BuddysTheme.colors.surface,
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(uiState.messages) { message ->
+                        AiMessageBubble(
+                            message = message,
+                            onCopy = {
+                                clipboardManager.setText(AnnotatedString(message.text))
+                                Toast.makeText(context, "Copied response 📋", Toast.LENGTH_SHORT).show()
+                            },
+                            onRegenerate = {
+                                viewModel.regenerateLastResponse()
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Capsule Composer directly above keyboard
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(BuddysTheme.colors.surface)
-                    .navigationBarsPadding()
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 // Quick Suggestion Chips Carousel
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 8.dp)
-                ) {
-                    items(uiState.suggestions) { suggestion ->
-                        Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable {
-                                    viewModel.sendMessage(suggestion)
-                                },
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFF1F5F9),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                        ) {
-                            Text(
-                                text = suggestion,
-                                color = Color(0xFF334155),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
+                if (uiState.suggestions.isNotEmpty()) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 8.dp)
+                    ) {
+                        items(uiState.suggestions) { suggestion ->
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable {
+                                        viewModel.sendMessage(suggestion)
+                                    },
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFFF1F5F9),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                            ) {
+                                Text(
+                                    text = suggestion,
+                                    color = Color(0xFF334155),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -251,37 +297,6 @@ fun BuddysAiScreen(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                }
-            }
-        }
-    ) { innerPadding ->
-        // Main Warm Cream Content Surface
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)),
-            color = BuddysTheme.colors.surface,
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(uiState.messages) { message ->
-                    AiMessageBubble(
-                        message = message,
-                        onCopy = {
-                            clipboardManager.setText(AnnotatedString(message.text))
-                            Toast.makeText(context, "Copied response 📋", Toast.LENGTH_SHORT).show()
-                        },
-                        onRegenerate = {
-                            viewModel.regenerateLastResponse()
-                        }
-                    )
                 }
             }
         }
