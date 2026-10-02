@@ -26,8 +26,8 @@ android {
         applicationId = "com.aura.glasschat"
         minSdk = 26
         targetSdk = 34
-        versionCode = 14
-        versionName = "0.5.0"
+        versionCode = 13
+        versionName = "0.4.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

@@ -348,14 +348,22 @@ private fun AiMessageBubble(
                         bottomStart = if (isUser) 18.dp else 4.dp,
                         bottomEnd = if (isUser) 4.dp else 18.dp
                     ),
-                    color = if (isUser) BuddysTheme.colors.bubbleOutgoing else Color.White,
-                    border = if (isUser) null else androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
+                    color = when {
+                        isUser -> BuddysTheme.colors.bubbleOutgoing
+                        message.isError -> Color(0xFFFEF2F2)
+                        else -> Color.White
+                    },
+                    border = when {
+                        isUser -> null
+                        message.isError -> androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFCA5A5))
+                        else -> androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
+                    },
                     shadowElevation = if (isUser) 1.dp else 2.dp
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                         Text(
                             text = message.text,
-                            color = Color(0xFF18181B),
+                            color = if (message.isError) Color(0xFFDC2626) else Color(0xFF18181B),
                             fontSize = 14.sp,
                             lineHeight = 19.sp,
                             fontWeight = if (isUser) FontWeight.SemiBold else FontWeight.Normal
@@ -369,7 +377,7 @@ private fun AiMessageBubble(
                         ) {
                             Text(
                                 text = message.timestamp,
-                                color = Color(0xFF64748B),
+                                color = if (message.isError) Color(0xFFEF4444) else Color(0xFF64748B),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -386,7 +394,7 @@ private fun AiMessageBubble(
                     }
                 }
 
-                // AI Action Row (Copy, Regenerate, Thumbs)
+                // AI Action Row (Copy, Regenerate / Retry)
                 if (!isUser) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
@@ -394,16 +402,18 @@ private fun AiMessageBubble(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(
-                            onClick = onCopy,
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Copy",
-                                tint = Color(0xFF94A3B8),
-                                modifier = Modifier.size(14.dp)
-                            )
+                        if (!message.isError) {
+                            IconButton(
+                                onClick = onCopy,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copy",
+                                    tint = Color(0xFF94A3B8),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
                         }
 
                         IconButton(
@@ -412,9 +422,18 @@ private fun AiMessageBubble(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Regenerate",
-                                tint = Color(0xFF94A3B8),
+                                contentDescription = if (message.isError) "Retry" else "Regenerate",
+                                tint = if (message.isError) Color(0xFFEF4444) else Color(0xFF94A3B8),
                                 modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        if (message.isError) {
+                            Text(
+                                text = "Tap to retry",
+                                color = Color(0xFFEF4444),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { onRegenerate() }
                             )
                         }
                     }

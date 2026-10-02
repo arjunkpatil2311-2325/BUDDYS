@@ -2,8 +2,10 @@ package com.aura.glasschat.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aura.glasschat.data.repository.AiResponseResult
+import com.aura.glasschat.data.repository.BuddysAiRepository
+import com.aura.glasschat.data.repository.ChatHistoryMessage
 import com.aura.glasschat.ui.components.DynamicIslandManager
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +17,8 @@ data class AiMessage(
     val sender: String, // "user" or "ai"
     val text: String,
     val timestamp: String = "Now",
-    val isThinking: Boolean = false
+    val isThinking: Boolean = false,
+    val isError: Boolean = false
 )
 
 data class BuddysAiUiState(
@@ -35,7 +38,9 @@ data class BuddysAiUiState(
     )
 )
 
-class BuddysAiViewModel : ViewModel() {
+class BuddysAiViewModel(
+    private val repository: BuddysAiRepository = BuddysAiRepository.getInstance()
+) : ViewModel() {
     private val _uiState = MutableStateFlow(BuddysAiUiState())
     val uiState: StateFlow<BuddysAiUiState> = _uiState.asStateFlow()
 
@@ -55,68 +60,83 @@ class BuddysAiViewModel : ViewModel() {
             isThinking = true
         )
 
+        val currentList = _uiState.value.messages + userMsg
         _uiState.value = _uiState.value.copy(
-            messages = _uiState.value.messages + userMsg + thinkingMsg,
+            messages = currentList + thinkingMsg,
             isThinking = true
         )
 
         // Post thinking event to Dynamic Island
-        DynamicIslandManager.postAiThinking("Thinking about: ${prompt.take(25)}...")
+        DynamicIslandManager.postAiThinking("Thinking: ${prompt.take(25)}...")
 
         viewModelScope.launch {
-            // Intelligent response generator simulation with rich responses
-            delay(1200)
+            // Build conversation history (only valid text messages, avoiding thinking / errors)
+            val historyPayload = currentList
+                .filterNot { it.isThinking || it.isError || it.text.isBlank() }
+                .map { msg ->
+                    ChatHistoryMessage(
+                        role = if (msg.sender == "user") "user" else "assistant",
+                        content = msg.text
+                    )
+                }
 
-            val replyText = generateAiResponse(prompt.trim())
+            val result = repository.getAiResponse(historyPayload)
 
-            val finalAiMsg = AiMessage(
-                id = thinkingMsg.id,
-                sender = "ai",
-                text = replyText,
-                timestamp = "Just now",
-                isThinking = false
-            )
+            when (result) {
+                is AiResponseResult.Success -> {
+                    val finalAiMsg = AiMessage(
+                        id = thinkingMsg.id,
+                        sender = "ai",
+                        text = result.reply,
+                        timestamp = "Just now",
+                        isThinking = false,
+                        isError = false
+                    )
 
-            val updatedList = _uiState.value.messages
-                .filterNot { it.id == thinkingMsg.id } + finalAiMsg
+                    val updatedList = _uiState.value.messages
+                        .filterNot { it.id == thinkingMsg.id } + finalAiMsg
 
-            _uiState.value = _uiState.value.copy(
-                messages = updatedList,
-                isThinking = false
-            )
+                    _uiState.value = _uiState.value.copy(
+                        messages = updatedList,
+                        isThinking = false
+                    )
 
-            // Post response ready event to Dynamic Island
-            DynamicIslandManager.postAiResponseReady(
-                preview = replyText.take(50) + "...",
-                prompt = prompt
-            )
+                    // Post response ready event to Dynamic Island
+                    DynamicIslandManager.postAiResponseReady(
+                        preview = result.reply.take(50) + "...",
+                        prompt = prompt
+                    )
+                }
+                is AiResponseResult.Error -> {
+                    val errorAiMsg = AiMessage(
+                        id = thinkingMsg.id,
+                        sender = "ai",
+                        text = result.message,
+                        timestamp = "Error",
+                        isThinking = false,
+                        isError = true
+                    )
+
+                    val updatedList = _uiState.value.messages
+                        .filterNot { it.id == thinkingMsg.id } + errorAiMsg
+
+                    _uiState.value = _uiState.value.copy(
+                        messages = updatedList,
+                        isThinking = false
+                    )
+                }
+            }
         }
     }
 
     fun regenerateLastResponse() {
         val lastUserMsg = _uiState.value.messages.lastOrNull { it.sender == "user" }
-        if (lastUserMsg != null) {
-            sendMessage(lastUserMsg.text)
-        }
-    }
-
-    private fun generateAiResponse(prompt: String): String {
-        val lower = prompt.lowercase()
-        return when {
-            "write" in lower || "message" in lower -> {
-                "Here is a thoughtful message you can send:\n\n\"Hey! Just wanted to check in and see how you're doing. Hope everything is going well on your side! Let's catch up soon ✨\""
-            }
-            "idea" in lower || "weekend" in lower -> {
-                "Here are 3 fun ideas to explore:\n\n1. 🎨 Creative DIY: Try creating a miniature clay figure or digital doodle\n2. ☕ Local Explorer: Check out a cozy cafe you haven't visited yet\n3. 🚴 Outdoor Sprint: Go on a sunset bike ride or brisk walk with a great playlist!"
-            }
-            "explain" in lower -> {
-                "Here is the simple breakdown:\n\nImagine regular computers as light switches that can only be ON (1) or OFF (0). Quantum computing uses special quantum bits (qubits) that can be in BOTH states at once—allowing it to solve complex puzzles thousands of times faster!"
-            }
-            "bio" in lower -> {
-                "Here are 2 clean bio options for your profile:\n\n✨ Option 1: \"Living in color & good conversations • Tap to buddy anytime ✌️\"\n🚀 Option 2: \"Creating, connecting, and keeping it private on Buddys.\""
-            }
-            else -> {
-                "That's an interesting thought! Here is what I think:\n\nBuddys is all about authentic, private connections and playful creativity. Whether you're brainstorming a new project, writing a voice note, or sharing moments with close friends, keeping it genuine always wins! 💡"
+        if (lastUserMsg != null && !_uiState.value.isThinking) {
+            val lastUserIdx = _uiState.value.messages.indexOfLast { it.id == lastUserMsg.id }
+            if (lastUserIdx != -1) {
+                val trimmedList = _uiState.value.messages.take(lastUserIdx)
+                _uiState.value = _uiState.value.copy(messages = trimmedList)
+                sendMessage(lastUserMsg.text)
             }
         }
     }
