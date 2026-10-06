@@ -24,7 +24,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -67,7 +66,7 @@ fun BuddysAiScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BuddysTheme.colors.skyHeader)
+            .background(BuddysTheme.colors.background)
     ) {
         Column(
             modifier = Modifier
@@ -76,87 +75,91 @@ fun BuddysAiScreen(
                 .navigationBarsPadding()
                 .imePadding()
         ) {
-            // Sky-Blue Header Banner matching reference
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Modern Edge-to-Edge Top Bar with Hairline Divider
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = BuddysTheme.colors.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border)
             ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.size(40.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color(0xFF18181B),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                CartoonAvatar(
-                    size = 44.dp,
-                    isAi = true,
-                    name = "Buddys AI",
-                    isOnline = true,
-                    showOnlineBadge = true,
-                    cornerRadius = 14.dp
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Buddys AI",
-                            color = Color(0xFF18181B),
-                            fontWeight = FontWeight.Black,
-                            fontSize = 17.sp
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = BuddysTheme.colors.textPrimary,
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFF4F46E5).copy(alpha = 0.15f)
-                        ) {
-                            Text(
-                                text = "BOT",
-                                color = Color(0xFF4F46E5),
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 9.sp,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                            )
-                        }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF22C55E))
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "AI Assistant • Online",
-                            color = Color(0xFF15803D),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    CartoonAvatar(
+                        size = 42.dp,
+                        isAi = true,
+                        name = "Buddys AI",
+                        isOnline = true,
+                        showOnlineBadge = true,
+                        cornerRadius = 14.dp
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Buddys AI",
+                                color = BuddysTheme.colors.textPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = BuddysTheme.colors.primaryRed.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "GEMINI",
+                                    color = BuddysTheme.colors.primaryRed,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 9.sp,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF10B981))
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Online • Instant Answers",
+                                color = BuddysTheme.colors.textSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
 
-            // Main Warm Cream Content Surface
-            Surface(
+            // Message Stream Area
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)),
-                color = BuddysTheme.colors.surface,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                    .background(BuddysTheme.colors.background)
             ) {
                 LazyColumn(
                     state = listState,
@@ -180,122 +183,129 @@ fun BuddysAiScreen(
                 }
             }
 
-            // Capsule Composer directly above keyboard
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BuddysTheme.colors.surface)
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            // Modern Bottom Composer Bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = BuddysTheme.colors.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border)
             ) {
-                // Quick Suggestion Chips Carousel
-                if (uiState.suggestions.isNotEmpty()) {
-                    LazyRow(
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    // Quick Suggestion Chips Carousel
+                    if (uiState.suggestions.isNotEmpty()) {
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(bottom = 8.dp)
+                        ) {
+                            items(uiState.suggestions) { suggestion ->
+                                Surface(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .clickable {
+                                            viewModel.sendMessage(suggestion)
+                                        },
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = BuddysTheme.colors.surfaceSecondary,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border)
+                                ) {
+                                    Text(
+                                        text = suggestion,
+                                        color = BuddysTheme.colors.textPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(bottom = 8.dp)
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(uiState.suggestions) { suggestion ->
-                            Surface(
+                        // Sleek Rounded Input Capsule
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(23.dp),
+                            color = BuddysTheme.colors.surfaceSecondary,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border)
+                        ) {
+                            Row(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .clickable {
-                                        viewModel.sendMessage(suggestion)
-                                    },
-                                shape = RoundedCornerShape(14.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                                    .fillMaxSize()
+                                    .padding(horizontal = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = suggestion,
-                                    color = Color(0xFF334155),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = BuddysTheme.colors.primaryRed,
+                                    modifier = Modifier.size(18.dp)
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                TextField(
+                                    value = inputText,
+                                    onValueChange = { inputText = it },
+                                    placeholder = {
+                                        Text(
+                                            text = "Ask Buddys AI anything...",
+                                            color = BuddysTheme.colors.textMuted,
+                                            fontSize = 14.sp
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        disabledContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        focusedTextColor = BuddysTheme.colors.textPrimary,
+                                        unfocusedTextColor = BuddysTheme.colors.textPrimary
+                                    ),
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                                    keyboardActions = KeyboardActions(onSend = {
+                                        if (inputText.isNotBlank()) {
+                                            viewModel.sendMessage(inputText)
+                                            inputText = ""
+                                        }
+                                    }),
+                                    singleLine = true
                                 )
                             }
                         }
-                    }
-                }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Rounded Input Capsule
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.White,
-                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
-                    ) {
-                        Row(
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Modern Send Button
+                        IconButton(
+                            onClick = {
+                                if (inputText.isNotBlank()) {
+                                    viewModel.sendMessage(inputText)
+                                    inputText = ""
+                                }
+                            },
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(BuddysTheme.colors.primaryRed)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = Color(0xFF6366F1),
-                                modifier = Modifier.size(20.dp)
-                            )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            TextField(
-                                value = inputText,
-                                onValueChange = { inputText = it },
-                                placeholder = {
-                                    Text(
-                                        text = "Message Buddys AI...",
-                                        color = Color(0xFF94A3B8),
-                                        fontSize = 14.sp
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                                keyboardActions = KeyboardActions(onSend = {
-                                    if (inputText.isNotBlank()) {
-                                        viewModel.sendMessage(inputText)
-                                        inputText = ""
-                                    }
-                                }),
-                                singleLine = true
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Send",
+                                tint = BuddysTheme.colors.textOnPrimary,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Send Button
-                    IconButton(
-                        onClick = {
-                            if (inputText.isNotBlank()) {
-                                viewModel.sendMessage(inputText)
-                                inputText = ""
-                            }
-                        },
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(BuddysTheme.colors.primaryAccent)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send",
-                            tint = Color(0xFF18181B),
-                            modifier = Modifier.size(20.dp)
-                        )
                     }
                 }
             }
@@ -317,7 +327,7 @@ private fun AiMessageBubble(
     ) {
         if (!isUser) {
             CartoonAvatar(
-                size = 34.dp,
+                size = 32.dp,
                 isAi = true,
                 name = "Buddys AI",
                 cornerRadius = 10.dp
@@ -326,16 +336,15 @@ private fun AiMessageBubble(
         }
 
         Column(
-            modifier = Modifier.widthIn(max = 280.dp),
+            modifier = Modifier.widthIn(max = 285.dp),
             horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
         ) {
             if (message.isThinking) {
-                // Thinking Bubble with Animated Pulse
+                // Thinking Bubble with Animated Spinner
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 2.dp
+                    shape = RoundedCornerShape(16.dp),
+                    color = BuddysTheme.colors.surfaceSecondary,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -344,44 +353,47 @@ private fun AiMessageBubble(
                         CircularProgressIndicator(
                             modifier = Modifier.size(14.dp),
                             strokeWidth = 2.dp,
-                            color = Color(0xFF6366F1)
+                            color = BuddysTheme.colors.primaryRed
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Buddys AI is thinking...",
-                            color = Color(0xFF64748B),
+                            text = "Thinking...",
+                            color = BuddysTheme.colors.textSecondary,
                             fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
             } else {
                 Surface(
                     shape = RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomStart = if (isUser) 18.dp else 4.dp,
-                        bottomEnd = if (isUser) 4.dp else 18.dp
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (isUser) 16.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 16.dp
                     ),
                     color = when {
                         isUser -> BuddysTheme.colors.bubbleOutgoing
                         message.isError -> Color(0xFFFEF2F2)
-                        else -> Color.White
+                        else -> BuddysTheme.colors.bubbleIncoming
                     },
                     border = when {
                         isUser -> null
-                        message.isError -> androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFCA5A5))
-                        else -> androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
-                    },
-                    shadowElevation = if (isUser) 1.dp else 2.dp
+                        message.isError -> androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5))
+                        else -> androidx.compose.foundation.BorderStroke(1.dp, BuddysTheme.colors.border)
+                    }
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                         Text(
                             text = message.text,
-                            color = if (message.isError) Color(0xFFDC2626) else Color(0xFF18181B),
+                            color = when {
+                                isUser -> BuddysTheme.colors.textOnPrimary
+                                message.isError -> Color(0xFFDC2626)
+                                else -> BuddysTheme.colors.textPrimary
+                            },
                             fontSize = 14.sp,
-                            lineHeight = 19.sp,
-                            fontWeight = if (isUser) FontWeight.SemiBold else FontWeight.Normal
+                            lineHeight = 20.sp,
+                            fontWeight = if (isUser) FontWeight.Medium else FontWeight.Normal
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -392,17 +404,21 @@ private fun AiMessageBubble(
                         ) {
                             Text(
                                 text = message.timestamp,
-                                color = if (message.isError) Color(0xFFEF4444) else Color(0xFF64748B),
+                                color = when {
+                                    isUser -> BuddysTheme.colors.textOnPrimary.copy(alpha = 0.75f)
+                                    message.isError -> Color(0xFFEF4444)
+                                    else -> BuddysTheme.colors.textMuted
+                                },
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Normal
                             )
                             if (isUser) {
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "✓✓",
-                                    color = Color(0xFF18181B),
+                                    color = BuddysTheme.colors.textOnPrimary.copy(alpha = 0.85f),
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.Black
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -425,7 +441,7 @@ private fun AiMessageBubble(
                                 Icon(
                                     imageVector = Icons.Default.ContentCopy,
                                     contentDescription = "Copy",
-                                    tint = Color(0xFF94A3B8),
+                                    tint = BuddysTheme.colors.textMuted,
                                     modifier = Modifier.size(14.dp)
                                 )
                             }
@@ -438,7 +454,7 @@ private fun AiMessageBubble(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = if (message.isError) "Retry" else "Regenerate",
-                                tint = if (message.isError) Color(0xFFEF4444) else Color(0xFF94A3B8),
+                                tint = if (message.isError) Color(0xFFEF4444) else BuddysTheme.colors.textMuted,
                                 modifier = Modifier.size(14.dp)
                             )
                         }

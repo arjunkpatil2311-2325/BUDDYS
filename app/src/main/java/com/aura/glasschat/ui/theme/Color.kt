@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 // ====================================================================
-// BUDDYS MODERN CARTOON DESIGN SYSTEM COLOR TOKENS (REFERENCE INSPIRED)
+// BUDDYS MASTER DESIGN SYSTEM — OBSIDIAN & PRECISION GLASS TOKENS
 // ====================================================================
 
 data class BuddysColorScheme(
@@ -22,22 +22,22 @@ data class BuddysColorScheme(
     val textMuted: Color,
     val border: Color,
     val divider: Color,
-    val primaryAccent: Color,      // Sunshine Yellow (#FDC827)
-    val deepAccent: Color,         // Warm Amber (#F59E0B)
-    val softAccent: Color,         // Soft Warm Tint (#FFF8E1)
-    val secondaryAccent: Color,    // Sky Blue (#82C8FA)
-    val skyHeader: Color,          // Sky Blue Header (#82C8FA)
-    val yellowHeader: Color,       // Sunshine Yellow (#FDC827)
-    val strongYellow: Color,       // Sunshine Yellow (#FDC827)
-    val success: Color,            // Online Green (#22C55E)
-    val warning: Color,            // Amber (#F59E0B)
-    val error: Color,              // Cartoon Red (#EF4444)
-    val bubbleOutgoing: Color,     // Sunshine Yellow (#FDC827)
-    val bubbleIncoming: Color,     // Crisp White (#FFFFFF)
-    val textOnPrimary: Color,      // Dark text on Sunshine Yellow (#18181B)
-    val bottomDock: Color,         // Deep Black Floating Dock (#121316)
-    val filterActive: Color,       // Dark Capsule Pill (#18181B)
-    val filterInactive: Color,     // White Capsule Pill (#FFFFFF)
+    val primaryAccent: Color,      // Signature Electric Crimson (#FF3B40)
+    val deepAccent: Color,         // Deep Crimson (#D92228)
+    val softAccent: Color,         // Soft Glow Tint
+    val secondaryAccent: Color,    // Electric Sky Blue (#38BDF8)
+    val skyHeader: Color,          // Seamless Top Header Surface
+    val yellowHeader: Color,       // Accent Tag
+    val strongYellow: Color,       // Accent Tag
+    val success: Color,            // Emerald Green (#10B981)
+    val warning: Color,            // Warm Amber (#F59E0B)
+    val error: Color,              // Crimson Red (#EF4444)
+    val bubbleOutgoing: Color,     // Signature Crimson (#FF3B40)
+    val bubbleIncoming: Color,     // Refined Neutral Surface Bubble
+    val textOnPrimary: Color,      // High-contrast Pure White (#FFFFFF)
+    val bottomDock: Color,         // Floating Glass Dock Surface
+    val filterActive: Color,       // Active Filter Pill
+    val filterInactive: Color,     // Inactive Filter Pill
     val webGeometryTint: Color = Color.Transparent
 ) {
     // Backward compatible aliases
@@ -49,74 +49,74 @@ data class BuddysColorScheme(
 }
 
 // --------------------------------------------------------------------
-// LIGHT THEME (PRIMARY: Sky Blue Header + Clean Cream Surface + Sunshine Yellow Bubbles)
+// LIGHT THEME (Porcelain Canvas + Crisp Pure White Surface + Signature Crimson)
 // --------------------------------------------------------------------
 val LightBuddysColors = BuddysColorScheme(
     isDark = false,
-    background = Color(0xFF82C8FA),       // Sky blue canvas / header
-    surface = Color(0xFFFFFDF9),          // Crisp warm cream main surface sheet
-    surfaceSecondary = Color(0xFFF4F4F6), // Light neutral gray secondary surface
-    surfaceElevated = Color(0xFFFFFFFF),  // Pure white elevated card
+    background = Color(0xFFF8F9FA),       // Clean airy porcelain canvas
+    surface = Color(0xFFFFFFFF),          // Pure crisp white cards
+    surfaceSecondary = Color(0xFFF1F3F6), // Smooth light slate secondary surface
+    surfaceElevated = Color(0xFFFFFFFF),  // Pure white elevated card with shadow
     surfaceComposer = Color(0xFFFFFFFF),  // Clean white composer capsule
-    textPrimary = Color(0xFF18181B),      // Deep crisp dark text
-    textSecondary = Color(0xFF64748B),    // Slate secondary text
-    textMuted = Color(0xFF94A3B8),        // Faint muted timestamp text
-    border = Color(0xFFE2E8F0),           // Subtle soft border
-    divider = Color(0xFFF1F5F9),          // Subtle chat list divider
-    primaryAccent = Color(0xFFFDC827),    // Sunshine golden yellow
-    deepAccent = Color(0xFFF59E0B),       // Rich warm amber
-    softAccent = Color(0xFFFFF9E6),       // Soft sunshine tint
-    secondaryAccent = Color(0xFF82C8FA),  // Sky Blue accent
-    skyHeader = Color(0xFF82C8FA),        // Reference Sky Blue Top Header
-    yellowHeader = Color(0xFFFDC827),     // Yellow accent
-    strongYellow = Color(0xFFFDC827),     // Yellow accent
-    success = Color(0xFF22C55E),          // Vibrant online green
-    warning = Color(0xFFF59E0B),          // Cartoon amber
-    error = Color(0xFFEF4444),            // Stamp red
-    bubbleOutgoing = Color(0xFFFDC827),   // Sunshine yellow speech bubble
-    bubbleIncoming = Color(0xFFFFFFFF),   // Crisp white speech bubble
-    textOnPrimary = Color(0xFF18181B),    // High-contrast dark text on yellow
-    bottomDock = Color(0xFF121316),       // Deep black floating bottom dock
-    filterActive = Color(0xFF18181B),     // Black active filter pill
-    filterInactive = Color(0xFFFFFFFF),   // White inactive filter pill
+    textPrimary = Color(0xFF0F172A),      // Deep crisp dark slate
+    textSecondary = Color(0xFF475569),    // Refined medium slate
+    textMuted = Color(0xFF94A3B8),        // Soft muted timestamp text
+    border = Color(0xFFE2E8F0),           // Subtle hairline border
+    divider = Color(0xFFF1F5F9),          // Hairline divider
+    primaryAccent = Color(0xFFFF3B40),    // Signature Electric Crimson
+    deepAccent = Color(0xFFD92228),       // Deep Crimson
+    softAccent = Color(0xFFFFF1F2),       // Soft rose glow tint
+    secondaryAccent = Color(0xFF0284C7),  // Sky Blue accent
+    skyHeader = Color(0xFFF8F9FA),        // Seamless clean header
+    yellowHeader = Color(0xFFFF3B40),     // Vibrant brand accent
+    strongYellow = Color(0xFFFF3B40),     // Vibrant brand accent
+    success = Color(0xFF10B981),          // Emerald online green
+    warning = Color(0xFFF59E0B),          // Amber
+    error = Color(0xFFEF4444),            // Crimson error
+    bubbleOutgoing = Color(0xFFFF3B40),   // Signature Crimson Bubble
+    bubbleIncoming = Color(0xFFF1F3F6),   // Crisp light gray speech bubble
+    textOnPrimary = Color(0xFFFFFFFF),    // High-contrast pure white text
+    bottomDock = Color(0xFFFFFFFF),       // Pure white floating dock
+    filterActive = Color(0xFF0F172A),     // Crisp dark active filter pill
+    filterInactive = Color(0xFFF1F3F6),   // Light inactive filter pill
     webGeometryTint = Color.Transparent
 )
 
 // --------------------------------------------------------------------
-// DARK THEME (Modern Dark Mode with Sky Blue & Sunshine Accents)
+// DARK THEME (Obsidian OLED Black + Graphite Surface + Glowing Crimson)
 // --------------------------------------------------------------------
 val DarkBuddysColors = BuddysColorScheme(
     isDark = true,
-    background = Color(0xFF0F172A),       // Deep twilight navy background
-    surface = Color(0xFF1E293B),          // Dark surface
-    surfaceSecondary = Color(0xFF334155), // Dark secondary surface
-    surfaceElevated = Color(0xFF243044),  // Elevated dark layer
-    surfaceComposer = Color(0xFF1E293B),  // Dark composer
-    textPrimary = Color(0xFFF8FAFC),      // Crisp white text
+    background = Color(0xFF090A0E),       // Pure OLED Obsidian Black
+    surface = Color(0xFF13141B),          // Deep dark graphite surface
+    surfaceSecondary = Color(0xFF1A1C24), // Elevated dark secondary surface
+    surfaceElevated = Color(0xFF222530),  // Floating modal / sheet layer
+    surfaceComposer = Color(0xFF161821),  // Dark sleek composer capsule
+    textPrimary = Color(0xFFF8FAFC),      // Crisp pure white text
     textSecondary = Color(0xFF94A3B8),    // Soft slate text
-    textMuted = Color(0xFF64748B),        // Faint text
-    border = Color(0xFF334155),           // Dark border
-    divider = Color(0xFF243044),          // Dark divider
-    primaryAccent = Color(0xFFFDC827),    // Sunshine yellow
-    deepAccent = Color(0xFFF59E0B),       // Amber
-    softAccent = Color(0xFF332F27),       // Dark tint
-    secondaryAccent = Color(0xFF82C8FA),  // Sky blue
-    skyHeader = Color(0xFF1E293B),        // Dark header
-    yellowHeader = Color(0xFFFDC827),     // Yellow
-    strongYellow = Color(0xFFFDC827),     // Yellow
-    success = Color(0xFF22C55E),          // Green
-    warning = Color(0xFFFBBF24),          // Yellow
-    error = Color(0xFFEF4444),            // Red
-    bubbleOutgoing = Color(0xFFFDC827),   // Sunshine yellow bubble
-    bubbleIncoming = Color(0xFF243044),   // Dark incoming bubble
-    textOnPrimary = Color(0xFF18181B),    // Dark text on yellow
-    bottomDock = Color(0xFF090A0C),       // Deep black dock
-    filterActive = Color(0xFFFDC827),     // Yellow active filter in dark mode
-    filterInactive = Color(0xFF243044),   // Inactive filter
+    textMuted = Color(0xFF64748B),        // Muted timestamp text
+    border = Color(0xFF232734),           // Subtle 1px hairline dark border
+    divider = Color(0xFF1B1E28),          // Subtle divider
+    primaryAccent = Color(0xFFFF3B40),    // Signature Electric Crimson
+    deepAccent = Color(0xFFD92228),       // Deep Crimson
+    softAccent = Color(0xFF2D1418),       // Subtle crimson ambient tint
+    secondaryAccent = Color(0xFF38BDF8),  // Electric Sky Blue
+    skyHeader = Color(0xFF090A0E),        // Seamless dark header
+    yellowHeader = Color(0xFFFF3B40),     // Vibrant brand accent
+    strongYellow = Color(0xFFFF3B40),     // Vibrant brand accent
+    success = Color(0xFF10B981),          // Emerald online green
+    warning = Color(0xFFFBBF24),          // Warm Amber
+    error = Color(0xFFEF4444),            // Crimson red
+    bubbleOutgoing = Color(0xFFFF3B40),   // Signature Crimson Outgoing Bubble
+    bubbleIncoming = Color(0xFF1A1C25),   // Refined dark graphite incoming bubble
+    textOnPrimary = Color(0xFFFFFFFF),    // Pure white on crimson
+    bottomDock = Color(0xFF111218),       // Deep graphite floating glass dock
+    filterActive = Color(0xFFFF3B40),     // Vibrant crimson active pill
+    filterInactive = Color(0xFF1A1C25),   // Subtle dark inactive pill
     webGeometryTint = Color.Transparent
 )
 
-val LocalBuddysColors = staticCompositionLocalOf { LightBuddysColors }
+val LocalBuddysColors = staticCompositionLocalOf { DarkBuddysColors }
 
 object BuddysTheme {
     val colors: BuddysColorScheme
@@ -126,30 +126,30 @@ object BuddysTheme {
 }
 
 // --------------------------------------------------------------------
-// MODERN CARTOON CONSTANTS
+// DESIGN SYSTEM CONSTANTS & HELPERS
 // --------------------------------------------------------------------
-val BuddysSkyBlue = Color(0xFF82C8FA)
-val BuddysSunshineYellow = Color(0xFFFDC827)
-val BuddysDarkDock = Color(0xFF121316)
-val BuddysCreamSurface = Color(0xFFFFFDF9)
+val BuddysSkyBlue = Color(0xFF38BDF8)
+val BuddysSunshineYellow = Color(0xFFFF3B40)
+val BuddysDarkDock = Color(0xFF111218)
+val BuddysCreamSurface = Color(0xFF13141B)
 val BuddysWhite = Color(0xFFFFFFFF)
-val BuddysInk = Color(0xFF18181B)
+val BuddysInk = Color(0xFFF8FAFC)
 val BuddysMuted = Color(0xFF94A3B8)
 
 // Backward compatible aliases
-val BuddysPrimaryPaper = Color(0xFFFFFDF9)
-val BuddysSecondaryPaper = Color(0xFFF4F4F6)
+val BuddysPrimaryPaper = Color(0xFF13141B)
+val BuddysSecondaryPaper = Color(0xFF1A1C24)
 val BuddysWhitePaper = Color(0xFFFFFFFF)
-val BuddysPrimaryYellow = Color(0xFFFDC827)
-val BuddysStrongYellow = Color(0xFFFDC827)
-val BuddysPrimaryOrange = Color(0xFFFDC827)
-val BuddysSecondaryOrange = Color(0xFFF59E0B)
+val BuddysPrimaryYellow = Color(0xFFFF3B40)
+val BuddysStrongYellow = Color(0xFFFF3B40)
+val BuddysPrimaryOrange = Color(0xFFFF3B40)
+val BuddysSecondaryOrange = Color(0xFFD92228)
 val BuddysMutedInk = Color(0xFF64748B)
-val BuddysLightDivider = Color(0xFFF1F5F9)
-val BuddysRed = Color(0xFFFDC827)
-val BuddysDeepRed = Color(0xFFF59E0B)
-val BuddysDarkBlue = Color(0xFF121316)
-val BuddysBlack = Color(0xFF121316)
+val BuddysLightDivider = Color(0xFF1B1E28)
+val BuddysRed = Color(0xFFFF3B40)
+val BuddysDeepRed = Color(0xFFD92228)
+val BuddysDarkBlue = Color(0xFF090A0E)
+val BuddysBlack = Color(0xFF090A0E)
 
 val BackgroundCream: Color @Composable get() = BuddysTheme.colors.background
 val PaperWhite: Color @Composable get() = BuddysTheme.colors.surface
@@ -169,26 +169,27 @@ val PastelPink: Color @Composable get() = BuddysTheme.colors.softAccent
 val PastelMint: Color @Composable get() = BuddysTheme.colors.success
 val PastelSkyBorder: Color @Composable get() = BuddysTheme.colors.border
 
-// Gradients
+// High-end gradients
 val BuddysRedGradient: Brush
     get() = Brush.linearGradient(
-        listOf(Color(0xFFFDC827), Color(0xFFF59E0B))
+        listOf(Color(0xFFFF3B40), Color(0xFFFF5E62))
     )
 
 val StoryRingGradient: Brush
     get() = Brush.sweepGradient(
         listOf(
-            Color(0xFF82C8FA),
-            Color(0xFFFDC827),
-            Color(0xFF22C55E),
-            Color(0xFF82C8FA)
+            Color(0xFFFF3B40),
+            Color(0xFFFF6B6B),
+            Color(0xFFE11D48),
+            Color(0xFFFF5E62),
+            Color(0xFFFF3B40)
         )
     )
 
-val SnapMediaColor: Color = Color(0xFFFDC827)
-val SnapChatColor: Color = Color(0xFF82C8FA)
-val SnapVoiceColor: Color = Color(0xFF22C55E)
-val SeenReceiptBlue: Color = Color(0xFF82C8FA)
+val SnapMediaColor: Color = Color(0xFFFF3B40)
+val SnapChatColor: Color = Color(0xFFFF3B40)
+val SnapVoiceColor: Color = Color(0xFF38BDF8)
+val SeenReceiptBlue: Color = Color(0xFF38BDF8)
 
 val GlassCardBorder: Color
     @Composable get() = BuddysTheme.colors.border

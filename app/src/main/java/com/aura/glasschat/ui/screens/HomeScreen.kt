@@ -1454,13 +1454,13 @@ private fun TopBuddysHeader(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = BuddysTheme.colors.surfaceHeader,
-        border = BorderStroke(1.5.dp, BuddysTheme.colors.border)
+        color = BuddysTheme.colors.surface,
+        border = BorderStroke(1.dp, BuddysTheme.colors.border)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .height(58.dp)
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -1469,8 +1469,8 @@ private fun TopBuddysHeader(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                BuddysSpiderEmblem(size = 26.dp, tint = BuddysTheme.colors.textPrimary)
-                Spacer(modifier = Modifier.width(8.dp))
+                BuddysSpiderEmblem(size = 28.dp, tint = BuddysTheme.colors.primaryRed)
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = "Buddies",
                     style = MaterialTheme.typography.titleLarge.copy(
@@ -1489,10 +1489,10 @@ private fun TopBuddysHeader(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(BuddysTheme.colors.surface)
-                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(BuddysTheme.colors.surfaceSecondary)
+                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
                         .clickable(onClick = onSearchClick),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1506,10 +1506,10 @@ private fun TopBuddysHeader(
 
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(BuddysTheme.colors.surface)
-                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(BuddysTheme.colors.surfaceSecondary)
+                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
                         .clickable(onClick = onActivityClick),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1534,10 +1534,9 @@ private fun TopBuddysHeader(
 
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(BuddysTheme.colors.primaryRed)
-                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
                         .clickable(onClick = onAddFriendClick),
                     contentAlignment = Alignment.Center
                 ) {

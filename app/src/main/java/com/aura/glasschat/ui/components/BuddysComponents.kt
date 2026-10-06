@@ -45,8 +45,8 @@ fun BuddysCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = BuddysTheme.colors.surface,
     borderColor: Color = BuddysTheme.colors.border,
-    shape: RoundedCornerShape = RoundedCornerShape(12.dp),
-    borderWidth: Dp = 1.5.dp,
+    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
+    borderWidth: Dp = 1.dp,
     elevation: Dp = 0.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -54,7 +54,7 @@ fun BuddysCard(
         modifier = modifier
             .clip(shape)
             .background(backgroundColor)
-            .border(borderWidth, borderColor, shape)
+            .border(borderWidth, borderColor.copy(alpha = if (BuddysTheme.colors.isDark) 0.5f else 0.8f), shape)
     ) {
         content()
     }
@@ -220,9 +220,9 @@ fun BuddysSearchBar(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(BuddysTheme.colors.surfaceSecondary)
-            .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
+            .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
             .then(if (onSearchClick != null) Modifier.clickable { onSearchClick() } else Modifier)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -643,9 +643,9 @@ fun SocialFeedMomentCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(BuddysTheme.colors.surface)
-            .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
+            .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(16.dp))
     ) {
         Column(
             modifier = Modifier
@@ -660,13 +660,13 @@ fun SocialFeedMomentCard(
                     .clickable(enabled = onAuthorClick != null) { onAuthorClick?.invoke() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar with illustrated 1.5dp ink outline
+                // Avatar with modern hairline border
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(BuddysTheme.colors.yellowHeader)
-                        .border(1.5.dp, BuddysTheme.colors.border, CircleShape)
+                        .background(BuddysTheme.colors.surfaceSecondary)
+                        .border(1.dp, BuddysTheme.colors.border, CircleShape)
                         .padding(2.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -707,16 +707,16 @@ fun SocialFeedMomentCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 2. Media Preview with solid 1.5dp ink border
+            // 2. Media Preview with refined hairline border
             if (!mediaUrl.isNullOrBlank()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp)
                         .height(280.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(BuddysTheme.colors.surfaceSecondary)
-                        .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(10.dp))
+                        .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(14.dp))
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onDoubleTap = { onLikeClick() }
@@ -976,9 +976,9 @@ fun BuddysSettingSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(BuddysTheme.colors.surface)
-                .border(1.5.dp, BuddysTheme.colors.border, RoundedCornerShape(12.dp))
+                .border(1.dp, BuddysTheme.colors.border, RoundedCornerShape(16.dp))
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 content()
